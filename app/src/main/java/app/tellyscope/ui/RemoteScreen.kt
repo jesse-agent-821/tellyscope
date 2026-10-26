@@ -391,11 +391,10 @@ private fun Keyboard(enabled: Boolean, type: (String) -> String?, press: suspend
         keyboardActions = KeyboardActions(onSend = { send() }),
         trailingIcon = {
             Row {
-                // A key, not a button: holding it repeats like the D-pad. Each Delete also takes the
-                // last character off the phone's field.
+                // A key, not a button: holding it repeats like the D-pad. It deletes on the TV only;
+                // the field above is the unsent draft, which the phone's keyboard edits.
                 KeySurface(
-                    RemoteKey.DEL, Copy.BACKSPACE, enabled,
-                    { key -> text = text.dropLast(1); error = null; press(key) },
+                    RemoteKey.DEL, Copy.BACKSPACE, enabled, press,
                     CircleShape, Color.Transparent, Modifier.size(48.dp),
                 ) { Icon(RemoteIcons.Backspace, null, tint = LocalContentColor.current.copy(alpha = if (enabled) 1f else 0.38f)) }
                 IconButton(onClick = ::send, enabled = enabled && text.isNotEmpty()) {
