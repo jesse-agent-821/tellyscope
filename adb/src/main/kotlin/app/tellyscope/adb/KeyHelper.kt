@@ -33,7 +33,7 @@ class KeyHelper(val session: AdbSession, private val dex: ByteArray) : AutoClose
     /** Types [text], already checked with [Remote.typeable]; answers like [press]. */
     suspend fun type(text: String): Boolean? = send("t$text")
 
-    /** Empties the focused text box on the TV (Ctrl+A, then Delete). Answers like [press]. */
+    /** Empties the focused text box on the TV (see [Remote.clearText]). Answers like [press]. */
     suspend fun clear(): Boolean? = send("c")
 
     /** Turns the TV's picture off or on; the TV stays awake and connected. Answers like [press]. */

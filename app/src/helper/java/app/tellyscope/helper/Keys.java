@@ -29,6 +29,10 @@ import java.lang.reflect.Method;
 public final class Keys {
     /** InputManager's INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH: answers once the focused app is done with it. */
     private static final int WAIT_FOR_FINISH = 2;
+    /** INJECT_INPUT_EVENT_MODE_ASYNC: queued in order, no wait. */
+    private static final int ASYNC = 0;
+    /** Deletes after End: one Send's worth, Remote.MAX_TEXT. */
+    private static final int DELETES = 200;
 
     public static void main(String[] args) throws Exception {
         Object manager;
@@ -118,7 +122,11 @@ public final class Keys {
         }
     }
 
-    /** Ctrl+A, then Delete: everything in the focused text box is selected and deleted. */
+    /**
+     * Ctrl+A and Delete, then End and {@link #DELETES} Deletes for the boxes that ignore Ctrl+A.
+     * The Deletes are queued without waiting and only the last one waits for the app: keys reach
+     * it in order, so that answer covers them all and the batch stays well inside the answer wait.
+     */
     private static boolean clear(Object manager, Method inject) {
         try {
             int ctrl = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
@@ -129,17 +137,28 @@ public final class Keys {
             // Ctrl comes back up even when A wasn't taken, so the TV isn't left holding it.
             ok = send(manager, inject, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_CTRL_LEFT, 0) && ok;
             long del = SystemClock.uptimeMillis();
-            return ok
+            ok = ok
                 && send(manager, inject, del, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0)
                 && send(manager, inject, del, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0);
+            for (int i = 0; ok && i <= DELETES; i++) {
+                int code = i == 0 ? KeyEvent.KEYCODE_MOVE_END : KeyEvent.KEYCODE_DEL;
+                long down = SystemClock.uptimeMillis();
+                ok = send(manager, inject, down, KeyEvent.ACTION_DOWN, code, 0, ASYNC)
+                    && send(manager, inject, down, KeyEvent.ACTION_UP, code, 0, i == DELETES ? WAIT_FOR_FINISH : ASYNC);
+            }
+            return ok;
         } catch (Throwable t) {
             return false;
         }
     }
 
     private static boolean send(Object manager, Method inject, long downTime, int action, int code, int meta) throws Exception {
+        return send(manager, inject, downTime, action, code, meta, WAIT_FOR_FINISH);
+    }
+
+    private static boolean send(Object manager, Method inject, long downTime, int action, int code, int meta, int mode) throws Exception {
         KeyEvent e = new KeyEvent(downTime, SystemClock.uptimeMillis(), action, code, 0, meta,
             KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_KEYBOARD);
-        return (Boolean) inject.invoke(manager, e, WAIT_FOR_FINISH);
+        return (Boolean) inject.invoke(manager, e, mode);
     }
 }
