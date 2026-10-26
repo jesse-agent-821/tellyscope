@@ -710,7 +710,6 @@ class AdbDeviceSource(context: Context) : DeviceSource {
 
     override suspend fun type(deviceId: String, text: String) = busy(deviceId) { remote(deviceId).type(text) }
 
-    override suspend fun clearText(deviceId: String) = busy(deviceId) { remote(deviceId).clearText() }
 
     override suspend fun screen(deviceId: String, on: Boolean) = busy(deviceId) { remote(deviceId).screen(on) }
 

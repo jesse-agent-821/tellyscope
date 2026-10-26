@@ -45,18 +45,17 @@ class RemoteTest {
         assertEquals("input keyevent 3", sh.ran.last())
     }
 
-    @Test fun clearGoesThroughTheHelperWhileItRuns() = runBlocking { // see KeyHelperTest
-        val sh = FakeShell().apply { execOutput = "ready\n1\n" }
-        assertTrue(Remote(sh, KeyHelper(sh, byteArrayOf(1))).clearText())
-        assertEquals("c\n", sh.execInput.readUtf8())
-        assertTrue(sh.ran.none { it.startsWith("input") })
+    @Test fun backspaceIsOneDelete() = runTest {
+        val sh = FakeShell()
+        assertTrue(Remote(sh).press(RemoteKey.DEL))
+        assertEquals(listOf("input keyevent 67"), sh.ran)
     }
 
-    @Test fun clearFallsBackToInputWhenTheHelperCannotStart() = runBlocking { // see KeyHelperTest
-        val sh = FakeShell().apply { execOutput = "" }
-        assertTrue(Remote(sh, KeyHelper(sh, byteArrayOf(1))).clearText())
-        val codes = sh.ran.last().removePrefix("input keyevent ").split(' ')
-        assertEquals(listOf("123") + List(Remote.MAX_TEXT) { "67" }, codes) // End, then a Delete per character
+    @Test fun backspaceGoesThroughTheHelperWhileItRuns() = runBlocking { // see KeyHelperTest
+        val sh = FakeShell().apply { execOutput = "ready\n1\n" }
+        assertTrue(Remote(sh, KeyHelper(sh, byteArrayOf(1))).press(RemoteKey.DEL))
+        assertEquals("67\n", sh.execInput.readUtf8())
+        assertTrue(sh.ran.none { it.startsWith("input") })
     }
 
     @Test fun fireHomeStartsTheDefaultLauncher() = runTest {

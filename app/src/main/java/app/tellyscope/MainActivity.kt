@@ -276,7 +276,6 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
             actions = RemoteActions(
                 press = vm::press,
                 type = vm::type,
-                clearText = vm::clearText,
                 reboot = vm::reboot,
                 back = { remote = false },
                 retryRestart = vm::retryRestart,

@@ -20,6 +20,8 @@ enum class RemoteKey(val code: Int, val repeats: Boolean = false) {
     VOLUME_UP(24, repeats = true),
     VOLUME_DOWN(25, repeats = true),
     MUTE(164),
+    /** Backspace in the focused text box. */
+    DEL(67, repeats = true),
 }
 
 class Remote(private val session: AdbSession, private val keys: KeyHelper? = null) {
@@ -57,13 +59,6 @@ class Remote(private val session: AdbSession, private val keys: KeyHelper? = nul
     suspend fun type(text: String): Boolean = keys?.type(text) ?: (session.shell(typeCommand(text)).exitCode == 0)
 
     /**
-     * Empties the focused text box on the TV: End, then [MAX_TEXT] Deletes, one Send's worth. The
-     * key helper selects all and deletes first, which also clears longer text where the box takes
-     * Ctrl+A; `input` can't send Ctrl+A on older Android. Throws if the link is gone.
-     */
-    suspend fun clearText(): Boolean = keys?.clear() ?: (session.shell(CLEAR_COMMAND).exitCode == 0)
-
-    /**
      * Turns the TV's picture off or back on, leaving the TV awake so the link stays up. Only the
      * key helper can: false when it isn't running or the TV refused. Throws if the link is gone.
      */
@@ -95,9 +90,6 @@ class Remote(private val session: AdbSession, private val keys: KeyHelper? = nul
 
     companion object {
         const val MAX_TEXT = 200
-
-        /** End, then a Delete per character. Keys.DELETES matches [MAX_TEXT]. */
-        internal val CLEAR_COMMAND = "input keyevent 123" + " 67".repeat(MAX_TEXT)
 
         /** `pkg/.Activity` or `pkg/pkg.Activity`; a nested class has a `$`, which the single quotes keep. */
         private val COMPONENT = Regex("[A-Za-z0-9_.]+/[A-Za-z0-9_.$]+")

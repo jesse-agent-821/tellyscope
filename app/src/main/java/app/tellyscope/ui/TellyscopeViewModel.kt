@@ -1462,22 +1462,6 @@ class TellyscopeViewModel(
         return null
     }
 
-    /** Empties the focused text box on the TV. */
-    fun clearText() {
-        val id = _state.value.selectedId ?: return
-        viewModelScope.launch {
-            keys.withLock {
-                _notice.value = try {
-                    if (source.clearText(id)) null else Copy.CLEAR_REFUSED
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    Copy.REMOTE_LOST
-                }
-            }
-        }
-    }
-
     /** The TV shows its own update screen; Tellyscope can't see what it finds, so it only says where to look. */
     fun checkUpdates() {
         val id = _state.value.selectedId ?: return

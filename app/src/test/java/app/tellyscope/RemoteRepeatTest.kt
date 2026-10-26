@@ -37,6 +37,18 @@ class RemoteRepeatTest {
         assertEquals(1 + 1000 / REPEAT_EVERY_MS.toInt(), presses)
     }
 
+    @Test fun backspaceDeletesOnceOnATap() = runTest {
+        var presses = 0
+        repeatWhileHeld(RemoteKey.DEL, held = { false }) { presses++; true }
+        assertEquals(1, presses)
+    }
+
+    @Test fun heldBackspaceRepeatsUntilReleased() = runTest {
+        var presses = 0
+        repeatWhileHeld(RemoteKey.DEL, held = { testScheduler.currentTime < 400 + 500 }) { presses++; true }
+        assertEquals(1 + 500 / REPEAT_EVERY_MS.toInt(), presses)
+    }
+
     @Test fun okNeverRepeats() = runTest {
         var presses = 0
         repeatWhileHeld(RemoteKey.OK, held = { true }) { presses++; true }

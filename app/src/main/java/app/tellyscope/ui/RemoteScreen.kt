@@ -60,6 +60,7 @@ import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
@@ -142,8 +143,6 @@ data class RemoteActions(
     val press: suspend (RemoteKey) -> Boolean = { true },
     /** Returns why the text can't be typed, or null once it's sent. */
     val type: (String) -> String? = { null },
-    /** Empties the text box on the TV; the Remote empties the phone's field with it. */
-    val clearText: () -> Unit = {},
     val reboot: () -> Unit = {},
     val back: () -> Unit = {},
     /** A restart running late: try the TV again and wait another minute. */
@@ -274,7 +273,7 @@ fun RemoteScreen(
                 }
                 // Clear space above and below, so a thumb aiming at a volume key doesn't open an app.
                 DockSection(state.device.dock, state.device.apps, name(device), live, actions, Modifier.padding(vertical = 4.dp))
-                Keyboard(live, actions.type, actions.clearText)
+                Keyboard(live, actions.type, actions.press)
             } }
         }
     }
@@ -373,7 +372,7 @@ private fun KeySurface(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun Keyboard(enabled: Boolean, type: (String) -> String?, clearText: () -> Unit) {
+private fun Keyboard(enabled: Boolean, type: (String) -> String?, press: suspend (RemoteKey) -> Boolean) {
     var text by rememberSaveable { mutableStateOf("") }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     fun send() {
@@ -392,15 +391,13 @@ private fun Keyboard(enabled: Boolean, type: (String) -> String?, clearText: () 
         keyboardActions = KeyboardActions(onSend = { send() }),
         trailingIcon = {
             Row {
-                TooltipBox(
-                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-                    tooltip = { PlainTooltip { Text(Copy.CLEAR_TV_TEXT) } },
-                    state = rememberTooltipState(),
-                ) {
-                    IconButton(onClick = { text = ""; error = null; clearText() }, enabled = enabled) {
-                        Icon(RemoteIcons.Backspace, contentDescription = Copy.CLEAR_TV_TEXT)
-                    }
-                }
+                // A key, not a button: holding it repeats like the D-pad. Each Delete also takes the
+                // last character off the phone's field.
+                KeySurface(
+                    RemoteKey.DEL, Copy.BACKSPACE, enabled,
+                    { key -> text = text.dropLast(1); error = null; press(key) },
+                    CircleShape, Color.Transparent, Modifier.size(48.dp),
+                ) { Icon(RemoteIcons.Backspace, null, tint = LocalContentColor.current.copy(alpha = if (enabled) 1f else 0.38f)) }
                 IconButton(onClick = ::send, enabled = enabled && text.isNotEmpty()) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send to the TV")
                 }

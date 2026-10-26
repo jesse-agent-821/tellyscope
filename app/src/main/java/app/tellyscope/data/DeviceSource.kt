@@ -147,9 +147,6 @@ interface DeviceSource {
     /** Types into the focused box on the TV. The caller checks [app.tellyscope.adb.Remote.typeable] first. */
     suspend fun type(deviceId: String, text: String): Boolean
 
-    /** Empties the focused text box on the TV. False when this TV can't, or refused. Throws when it's gone. */
-    suspend fun clearText(deviceId: String): Boolean = false
-
     /**
      * Turns the TV's picture off or back on; the TV stays awake and connected. False when this TV
      * can't (no key helper, or the TV refused). Throws when it's gone.
