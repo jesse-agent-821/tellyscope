@@ -10,6 +10,16 @@ import kotlin.test.assertTrue
 class ActionsTest {
     private val home = "cmd package resolve-activity" to ok("priority=0 preferredOrder=0\ncom.google.android.tvlauncher/.MainActivity\n")
 
+    @Test fun currentHomeIsTheDefaultLauncher() = runTest {
+        val sh = FakeShell(mapOf("cmd package resolve-activity" to ok("priority=0\ncom.spocky.projengmenu/.ui.home.MainActivity\n")))
+        assertEquals("com.spocky.projengmenu/.ui.home.MainActivity", Actions(sh).currentHome())
+    }
+
+    @Test fun currentHomeIsNullWhenAndroidWouldAsk() = runTest {
+        val sh = FakeShell(mapOf("cmd package resolve-activity" to ok("priority=0\nandroid/com.android.internal.app.ResolverActivity\n")))
+        assertEquals(null, Actions(sh).currentHome())
+    }
+
     @Test fun disableReturnsEnableAsUndo() = runTest {
         val sh = FakeShell(mapOf(home, "pm disable-user" to ok("Package com.foo.ads new state: disabled-user\n")))
         assertEquals(ActionResult.Done(Action.ENABLE), Actions(sh).run(Action.DISABLE, "com.foo.ads"))

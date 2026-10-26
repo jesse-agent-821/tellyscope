@@ -32,6 +32,19 @@ class Remote(private val session: AdbSession, private val keys: KeyHelper? = nul
         keys?.press(key.code) ?: (session.shell("input keyevent ${key.code}").exitCode == 0)
 
     /**
+     * Home that opens [launcher], the activity Android resolves Home to (see [Actions.currentHome]).
+     * For Fire TV, whose Home key goes to Amazon's launcher whatever the default is. Null, a name
+     * that isn't a plain component, or a TV that won't start it fall back to the Home key.
+     */
+    suspend fun home(launcher: String?): Boolean {
+        if (launcher != null && COMPONENT.matches(launcher)) {
+            val r = session.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME -n '$launcher' 2>&1")
+            if (r.exitCode == 0 && "Error" !in r.output) return true
+        }
+        return press(RemoteKey.HOME)
+    }
+
+    /**
      * Opens the TV's own system update screen. Some builds have none, and older `am` reports a
      * missing screen in its output with exit code 0, so both are checked.
      */
@@ -81,6 +94,9 @@ class Remote(private val session: AdbSession, private val keys: KeyHelper? = nul
 
     companion object {
         const val MAX_TEXT = 200
+
+        /** `pkg/.Activity` or `pkg/pkg.Activity`; a nested class has a `$`, which the single quotes keep. */
+        private val COMPONENT = Regex("[A-Za-z0-9_.]+/[A-Za-z0-9_.$]+")
 
         /**
          * What `input text` can type: printable ASCII only (it has no key for anything else), and

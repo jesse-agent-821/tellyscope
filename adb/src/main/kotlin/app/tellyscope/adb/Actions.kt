@@ -180,7 +180,7 @@ class Actions(private val shell: AdbShell) {
         shell.shell(Commands.RESUMED).output.lineSequence().any { "ResumedActivity" in it && " ${Commands.PLAY_STORE}/" in it }
 
     /** The activity Home opens, or null when Android would ask (its chooser lives in `android`). */
-    private suspend fun currentHome(): String? =
+    suspend fun currentHome(): String? =
         activitiesIn(shell.shell(Commands.HOME_ACTIVITY).output).singleOrNull()?.takeUnless { it.startsWith("android/") }
 
     /**

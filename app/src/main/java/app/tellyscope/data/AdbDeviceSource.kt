@@ -20,6 +20,7 @@ import app.tellyscope.adb.TvFacts
 import app.tellyscope.adb.TvFile
 import app.tellyscope.adb.TvFolder
 import app.tellyscope.adb.Actions
+import app.tellyscope.adb.AdbSession
 import app.tellyscope.adb.ConnectionPrompt
 import app.tellyscope.adb.ConnectionRequest
 import app.tellyscope.adb.Connector
@@ -99,6 +100,8 @@ class AdbDeviceSource(context: Context) : DeviceSource {
     private val mine = MineBook(File(appContext.filesDir, "mine.tsv"))
     /** Last label seen per package, so history entries read like the app list. */
     private val labels = ConcurrentHashMap<String, String>()
+    /** Per TV, the session [fireHome] read on and the launcher it found. */
+    private val fireHomes = ConcurrentHashMap<String, Pair<AdbSession, String?>>()
     /** The remote's key helper on each TV, while the remote is open. */
     private val keyHelpers = ConcurrentHashMap<String, KeyHelper>()
     private val helperDex by lazy { appContext.assets.open("label-helper.jar").use { it.readBytes() } }
@@ -224,6 +227,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         restored.await()
         watchers.remove(deviceId)?.cancel()
         keyHelpers.remove(deviceId)?.close()
+        fireHomes -= deviceId
         links.remove(deviceId)?.disconnect()
         hits.remove(deviceId)
         restoring -= deviceId
@@ -472,6 +476,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         .firstOrNull { it.action == Action.Home && it.undoneAt == null && it.previous?.get("to")?.substringBefore('/') == pkg }?.id
 
     private suspend fun actNow(deviceId: String, action: Action, packageName: String, undoing: Long?, service: Boolean = true): HistoryEntry {
+        fireHomes -= deviceId // undoing a home switch moves Home back
         val shell = session(deviceId)
         // Before the first change on a TV, note what was already off: Restore must leave those alone.
         val key = key(deviceId)
@@ -509,6 +514,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
 
     /** [withService] false leaves the new launcher's accessibility service as it is: the user said no. */
     private suspend fun switchHome(deviceId: String, packageName: String, undoing: Long?, withService: Boolean): HistoryEntry {
+        fireHomes -= deviceId
         val key = key(deviceId)
         val actions = Actions(session(deviceId))
         return when (val r = actions.makeHome(packageName)) {
@@ -539,6 +545,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
      * else the TV's own. [added] stays on; the entry's undo makes it Home again.
      */
     private suspend fun homeBack(deviceId: String, added: String, undoing: Long?): HistoryEntry {
+        fireHomes -= deviceId
         val key = key(deviceId)
         val shell = session(deviceId)
         val system = Parsers.packages(shell.shell("pm list packages -s").output).map { it.name }.toSet()
@@ -663,7 +670,20 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         return Resolved(index, match, list, out.getOrNull(MATCH_KEYS.size)?.toIntOrNull())
     }
 
-    override suspend fun press(deviceId: String, key: RemoteKey) = busy(deviceId) { remote(deviceId).press(key) }
+    override suspend fun press(deviceId: String, key: RemoteKey) = busy(deviceId) {
+        if (key == RemoteKey.HOME && deviceKind(device(deviceId)) == DeviceKind.FireTv) remote(deviceId).home(fireHome(deviceId))
+        else remote(deviceId).press(key)
+    }
+
+    /**
+     * The launcher Home resolves to on a Fire TV, read once per session so the key stays fast. A
+     * home switch or its undo drops it; a reconnect brings a new session, which reads it again.
+     */
+    private suspend fun fireHome(deviceId: String): String? {
+        val session = session(deviceId)
+        fireHomes[deviceId]?.takeIf { it.first === session }?.let { return it.second }
+        return Actions(session).currentHome().also { fireHomes[deviceId] = session to it }
+    }
 
     /** One helper per link: a reconnect brings a new session, and the old helper went with the old one. */
     private suspend fun remote(deviceId: String): Remote {

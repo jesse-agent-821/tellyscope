@@ -45,6 +45,33 @@ class RemoteTest {
         assertEquals("input keyevent 3", sh.ran.last())
     }
 
+    @Test fun fireHomeStartsTheDefaultLauncher() = runTest {
+        val sh = FakeShell()
+        assertTrue(Remote(sh).home("com.spocky.projengmenu/.ui.home.MainActivity"))
+        assertEquals(
+            listOf("am start -a android.intent.action.MAIN -c android.intent.category.HOME -n 'com.spocky.projengmenu/.ui.home.MainActivity' 2>&1"),
+            sh.ran,
+        )
+    }
+
+    @Test fun fireHomeWithoutALauncherSendsTheKey() = runTest {
+        val sh = FakeShell()
+        assertTrue(Remote(sh).home(null))
+        assertEquals(listOf("input keyevent 3"), sh.ran)
+    }
+
+    @Test fun fireHomeFallsBackToTheKeyWhenTheTvWontStartIt() = runTest {
+        val sh = FakeShell(mapOf("am start" to ShellResult("Error: Activity class {x/.Gone} does not exist.", 0)))
+        assertTrue(Remote(sh).home("x/.Gone"))
+        assertEquals("input keyevent 3", sh.ran.last())
+    }
+
+    @Test fun fireHomeNeverPutsAnOddNameOnTheShellLine() = runTest {
+        val sh = FakeShell()
+        assertTrue(Remote(sh).home("x/.A'; reboot; '"))
+        assertEquals(listOf("input keyevent 3"), sh.ran)
+    }
+
     @Test fun keyRefusedByTheTvIsFalse() = runTest {
         val sh = FakeShell(mapOf("input keyevent" to ShellResult("Error: Unknown command", 1)))
         assertFalse(Remote(sh).press(RemoteKey.HOME))
