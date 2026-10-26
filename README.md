@@ -19,7 +19,7 @@ Debloat your Android TV, install apps, and browse and transfer files on it, all 
 <table>
   <tr>
     <td width="25%"><img src="docs/screenshots/tv-page.png" alt="A TV's page: the TV at a glance, its vitals, and the Install, Debloat and Send buttons"></td>
-    <td width="25%"><img src="docs/screenshots/remote.png" alt="The Remote: a D-pad, icon keys for Back, Home, Menu, mute and volume, a dock of four TV apps and typing on the TV"></td>
+    <td width="25%"><img src="docs/screenshots/remote.png" alt="The Remote: Screen off in the top bar, a D-pad, icon keys for Back, Home, Menu, mute and volume, a dock of four TV apps, and typing on the TV with a button to clear its text box"></td>
     <td width="25%"><img src="docs/screenshots/debloat.png" alt="Debloat: the TV's model on top, then the apps it will turn off, each with its package name"></td>
     <td width="25%"><img src="docs/screenshots/install.png" alt="Updating Netflix on the TV from an APK on the phone"></td>
   </tr>
@@ -27,31 +27,23 @@ Debloat your Android TV, install apps, and browse and transfer files on it, all 
     <td align="center"><sub>Your TV at a glance</sub></td>
     <td align="center"><sub>Control the TV, dock your apps</sub></td>
     <td align="center"><sub>Review every app Debloat turns off</sub></td>
-    <td align="center"><sub>Install or update apps</sub></td>
+    <td align="center"><sub>Install apps</sub></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/send.png" alt="Sending a video from the phone to the TV's Movies folder"></td>
-    <td><img src="docs/screenshots/tweaks.png" alt="TV tweaks: ad-blocking Private DNS on, faster animations, clear caches and screenshot"></td>
+    <td><img src="docs/screenshots/tweaks.png" alt="TV tweaks: ad-blocking Private DNS on, faster animations, clear caches, screenshot, and Another home screen to install a launcher"></td>
     <td><img src="docs/screenshots/home.png" alt="Making Projectivy Launcher the home screen: the confirm names both launchers"></td>
-    <td><img src="docs/screenshots/move.png" alt="A preview of Move to a new TV: the review step lists the apps to turn off and the settings to copy, before anything changes"></td>
+    <td><img src="docs/screenshots/advanced.png" alt="Advanced: CPU and RAM by app, the TV's network connection, and the apps' open connections"></td>
   </tr>
   <tr>
     <td align="center"><sub>Send files to the TV</sub></td>
-    <td align="center"><sub>Block ads and tweak the TV</sub></td>
+    <td align="center"><sub>Block ads, tweak the TV, add a launcher</sub></td>
     <td align="center"><sub>Set default launcher</sub></td>
-    <td align="center"><sub>Move your setup to a new TV (coming soon)</sub></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/access-warning.png" alt="The TV's page warns that another computer is connected, above Connected devices: the remote, headphones and keyboard"></td>
-    <td><img src="docs/screenshots/who-has-access.png" alt="Who has access: this phone and one other address connected now, then every computer the TV allows, each with its fingerprint and when it was last seen"></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>Know when another computer connects</sub></td>
-    <td align="center"><sub>See who has access, remove it in one tap</sub></td>
+    <td align="center"><sub>Advanced: what is using the CPU, RAM and network</sub></td>
   </tr>
 </table>
 
-<sub>Rendered from the app's screenshot tests with sample data, except Move your setup, which is a preview.</sub>
+<sub>Rendered from the app's screenshot tests with sample data. Remote and the Tweaks launcher row are drawn to match the app, and Advanced joins parts of its longer page.</sub>
 
 ## Get it
 

@@ -26,8 +26,6 @@ SHOTS = {
     "send": "25_readme_send",
     "tweaks": "29_readme_tweaks",
     "home": "30_readme_home",
-    "access-warning": "94_overview_access",
-    "who-has-access": "95_who_has_access",
 }
 
 DP = 3  # the tests render at xxhdpi
