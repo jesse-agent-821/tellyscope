@@ -21,7 +21,7 @@ Debloat your Android TV, install apps, and browse and transfer files on it, all 
     <td width="25%"><img src="docs/screenshots/tv-page.png" alt="A TV's page: the TV at a glance, its vitals, and the Install, Debloat and Send buttons"></td>
     <td width="25%"><img src="docs/screenshots/remote.png" alt="The Remote: Screen off in the top bar, a D-pad, icon keys for Back, Home, Menu, mute and volume, a dock of four TV apps, and typing on the TV with a button to clear its text box"></td>
     <td width="25%"><img src="docs/screenshots/debloat.png" alt="Debloat: the TV's model on top, then the apps it will turn off, each with its package name"></td>
-    <td width="25%"><img src="docs/screenshots/install.png" alt="Updating Netflix on the TV from an APK on the phone"></td>
+    <td width="25%"><img src="docs/screenshots/install.png" alt="Installing Kodi on the TV from an APK on the phone: the dialog says it is not on this TV yet"></td>
   </tr>
   <tr>
     <td align="center"><sub>Your TV at a glance</sub></td>
@@ -43,7 +43,7 @@ Debloat your Android TV, install apps, and browse and transfer files on it, all 
   </tr>
 </table>
 
-<sub>Rendered from the app's screenshot tests with sample data. Remote and the Tweaks launcher row are drawn to match the app, and Advanced joins parts of its longer page.</sub>
+<sub>Rendered from the app's screenshot tests with sample data. Remote, the Install dialog and the Tweaks launcher row are drawn to match the app, and Advanced joins parts of its longer page.</sub>
 
 ## Get it
 
