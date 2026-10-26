@@ -42,8 +42,14 @@ interface DeviceSource {
     /** Previously paired devices, including offline ones. */
     suspend fun known(): List<Device>
 
-    /** Try a known TV again after it stopped at "not allowed": the TV shows its Allow prompt. */
+    /**
+     * Try a known TV again after it stopped at "not allowed": the TV shows its Allow prompt. Clears
+     * [Device.loggedOutAt]; a refusal now is a plain "not allowed", not another logout.
+     */
     suspend fun reconnect(deviceId: String)
+
+    /** Cancel on the Allow step: stops the attempt, and a TV that had logged this phone out goes back to that. */
+    suspend fun cancelReconnect(deviceId: String)
 
     /** The user's own name for a TV; blank goes back to the network name. Kept per [historyKey]. */
     suspend fun rename(deviceId: String, name: String?)

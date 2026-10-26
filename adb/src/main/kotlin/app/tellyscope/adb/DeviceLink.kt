@@ -15,11 +15,13 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * One device's connection lifecycle: connect, stream stats while online, reconnect on its own
  * after the TV sleeps or drops off Wi-Fi. NOT_ALLOWED and NEEDS_PAIRING stop the loop until
- * [connect] is called again. A device that was online before gets [notAllowedLimit] tries first,
- * since a TV waking up can stall the handshake exactly like an unanswered prompt; past that it
- * stops, because each try puts a fresh "Allow debugging?" prompt on the TV (revoked access, a
- * reset, or Deny). [knownGood] marks a device remembered from an earlier launch, which counts as
- * online before.
+ * [connect] is called again: every try puts a fresh "Allow debugging?" prompt on the TV.
+ *
+ * A device that let this phone in before and then refuses it has taken the key back (revoked, Remove
+ * all other access from another build, a reset): that's a logout, stamped in [loggedOutAt]. [knownGood]
+ * marks a device remembered from an earlier launch, which counts as let in before. After
+ * `connect(asked = true)` the user is watching the prompt, so a refusal is a plain NOT_ALLOWED until
+ * the TV lets the phone in again.
  */
 class DeviceLink(
     val host: String,
@@ -28,8 +30,7 @@ class DeviceLink(
     private val retryEvery: Duration = 5.seconds,
     private val monitorFor: (AdbShell, StatsGate) -> MonitorSource = { s, gate -> DeviceMonitor(s, gate = gate) },
     private val open: suspend (String, Int) -> ConnectResult = { h, p -> Connector.connect(h, p) },
-    private val knownGood: Boolean = false,
-    private val notAllowedLimit: Int = 3,
+    knownGood: Boolean = false,
 ) {
     private val _state = MutableStateFlow(DeviceState.FOUND)
     val state: StateFlow<DeviceState> = _state.asStateFlow()
@@ -46,13 +47,41 @@ class DeviceLink(
     @Volatile var lastSeenMillis: Long? = null
         private set
 
+    /**
+     * Epoch millis of the last logout; null once the TV lets this phone in, or refuses it after
+     * `connect(asked = true)`. Kept through a reconnect attempt, so it only means "logged out" while
+     * [state] is NOT_ALLOWED. Always written before [state], so a reader that reads [state] first
+     * never sees a fresh NOT_ALLOWED with a stale value.
+     */
+    private val _loggedOutAt = MutableStateFlow<Long?>(null)
+    val loggedOutAt: StateFlow<Long?> = _loggedOutAt.asStateFlow()
+
+    /** The TV let this phone in before, so a refusal now means it took the key back. */
+    @Volatile private var allowedBefore = knownGood
+
     private var job: Job? = null
 
-    /** Starts over. The old session is let go at once, so nothing reads through it while the new one opens. */
-    fun connect() {
+    /**
+     * Starts over. The old session is let go at once, so nothing reads through it while the new one
+     * opens. [asked]: the user pressed connect, see the class doc.
+     */
+    fun connect(asked: Boolean = false) {
         job?.cancel()
         session = null
+        if (asked) allowedBefore = false
+        // Set here, not in the loop: nobody may see the old state once connect has returned.
+        _state.value = _state.value.on(DeviceEvent.Connect)
         job = scope.launch { loop() }
+    }
+
+    /** Logged out [at]: stays at NOT_ALLOWED without trying, so the TV gets no prompt until [connect]. */
+    fun holdLoggedOut(at: Long) {
+        job?.cancel()
+        job = null
+        session = null
+        allowedBefore = false
+        _loggedOutAt.value = at
+        _state.value = DeviceState.NOT_ALLOWED
     }
 
     fun disconnect() {
@@ -62,14 +91,11 @@ class DeviceLink(
     }
 
     private suspend fun loop() {
-        _state.value = _state.value.on(DeviceEvent.Connect)
-        var wasOnline = knownGood
-        var notAllowed = 0
         while (true) {
-            val r = open(host, port)
-            notAllowed = if (r is ConnectResult.NotAllowed) notAllowed + 1 else 0
-            when (r) {
-                is ConnectResult.NotAllowed -> if (!wasOnline || notAllowed >= notAllowedLimit) {
+            when (val r = open(host, port)) {
+                is ConnectResult.NotAllowed -> {
+                    _loggedOutAt.value = if (allowedBefore) System.currentTimeMillis() else null
+                    allowedBefore = false
                     _state.value = _state.value.on(DeviceEvent.AuthTimedOut)
                     return
                 }
@@ -79,7 +105,8 @@ class DeviceLink(
                 }
                 is ConnectResult.Unreachable -> _state.value = _state.value.on(DeviceEvent.Unreachable)
                 is ConnectResult.Online -> {
-                    wasOnline = true
+                    allowedBefore = true
+                    _loggedOutAt.value = null
                     online(r.session)
                     _state.value = _state.value.on(DeviceEvent.Lost)
                 }

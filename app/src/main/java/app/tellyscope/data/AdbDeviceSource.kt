@@ -117,13 +117,17 @@ class AdbDeviceSource(context: Context) : DeviceSource {
             saved[d.host] = d
             d.historyKey?.let { keys[d.host] = it }
             hits[d.host] = ScanHit(d.host, d.port, d.kind, d.name, null)
-            restoring += d.host
-            link(d.host, d.port, first = null, knownGood = true)
+            // A TV that logged this phone out stays quiet: reconnecting would prompt on it again.
+            if (d.loggedOutAt == null) restoring += d.host
+            link(d.host, d.port, first = null, knownGood = true, loggedOutAt = d.loggedOutAt)
         }
     }
 
-    /** Starts the reconnecting link for a TV and keeps its saved entry current as it comes and goes. */
-    private fun link(host: String, port: Int, first: AdbConnectResult?, knownGood: Boolean) {
+    /**
+     * Starts the reconnecting link for a TV and keeps its saved entry current as it comes and goes.
+     * A TV [loggedOutAt] a time gets its link without a connect.
+     */
+    private fun link(host: String, port: Int, first: AdbConnectResult?, knownGood: Boolean, loggedOutAt: Long? = null) {
         var pending = first
         val link = DeviceLink(host, port, scope, knownGood = knownGood, open = { h, p ->
             pending?.also { pending = null } ?: Connector.connect(h, p)
@@ -138,6 +142,15 @@ class AdbDeviceSource(context: Context) : DeviceSource {
                     if (st != null && lastKnown(st, kept) != kept) remember(host)
                 }
             }
+            launch {
+                link.loggedOutAt.collect { at ->
+                    val d = saved[host] ?: return@collect
+                    if (d.loggedOutAt != at) {
+                        saved[host] = d.copy(loggedOutAt = at)
+                        persist()
+                    }
+                }
+            }
             link.state.collect { st ->
                 if (st == AdbState.ONLINE) {
                     restoring -= host
@@ -147,7 +160,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
                 if (st == AdbState.ONLINE || st == AdbState.OFFLINE) remember(host)
             }
         })?.cancel()
-        link.connect()
+        if (loggedOutAt != null) link.holdLoggedOut(loggedOutAt) else link.connect()
     }
 
     private fun remember(host: String) {
@@ -165,6 +178,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
             lastSeen = link.lastSeenMillis ?: old?.lastSeen ?: System.currentTimeMillis(),
             historyKey = keys[host] ?: old?.historyKey,
             lastKnown = link.stats.value?.let { lastKnown(it, kept) } ?: kept,
+            loggedOutAt = link.loggedOutAt.value,
         )
         persist()
     }
@@ -191,7 +205,14 @@ class AdbDeviceSource(context: Context) : DeviceSource {
 
     override suspend fun reconnect(deviceId: String) {
         restored.await()
-        links[deviceId]?.connect()
+        links[deviceId]?.connect(asked = true)
+    }
+
+    override suspend fun cancelReconnect(deviceId: String) {
+        restored.await()
+        val link = links[deviceId] ?: return
+        // Connect again after a logout goes back to it, with its time; any other attempt just stops.
+        link.loggedOutAt.value?.let { link.holdLoggedOut(it) } ?: link.disconnect()
     }
 
     override suspend fun rename(deviceId: String, name: String?) {
@@ -771,6 +792,8 @@ class AdbDeviceSource(context: Context) : DeviceSource {
             nickname = names[keys[id] ?: id],
             brand = stats?.brand ?: saved[id]?.lastKnown?.brand,
             lastKnown = saved[id]?.lastKnown,
+            // Read after state: the link writes it first, so a fresh refusal never shows an old logout.
+            loggedOutAt = link?.loggedOutAt?.value?.takeIf { state == AdbState.NOT_ALLOWED },
         )
     }
 

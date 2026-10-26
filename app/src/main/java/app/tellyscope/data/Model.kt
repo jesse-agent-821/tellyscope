@@ -51,6 +51,11 @@ data class Device(
     val brand: String? = null,
     /** What the TV last reported, kept until Forget; as of [lastSeen]. Null before it ever answered. */
     val lastKnown: LastKnown? = null,
+    /**
+     * Epoch millis the TV took back a key it had allowed: this phone is logged out and stops asking
+     * (state stays [DeviceState.NotAllowed]). Null otherwise; cleared by a reconnect.
+     */
+    val loggedOutAt: Long? = null,
 )
 
 /**

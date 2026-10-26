@@ -124,6 +124,7 @@ class FakeDeviceSource(
     }
 
     override suspend fun reconnect(deviceId: String) = Unit
+    override suspend fun cancelReconnect(deviceId: String) = Unit
 
     override suspend fun rename(deviceId: String, name: String?) {
         remembered[deviceId]?.let { remembered[deviceId] = it.copy(nickname = name?.trim()?.ifEmpty { null }) }

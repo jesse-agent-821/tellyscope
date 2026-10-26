@@ -521,6 +521,14 @@ class TellyscopeViewModel(
         }
     }
 
+    /** Cancel on the Allow step after Connect again: a logged-out TV shows its logout page again. */
+    fun cancelReconnect(id: String) {
+        viewModelScope.launch {
+            source.cancelReconnect(id)
+            refreshDevices()
+        }
+    }
+
     fun rename(id: String, name: String?) {
         viewModelScope.launch {
             source.rename(id, name)

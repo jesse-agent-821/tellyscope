@@ -163,38 +163,45 @@ object Connector {
 
 internal class KadbSession(private val kadb: Kadb) : AdbSession {
     /**
+     * The connection this session opened, or an IOException once it has dropped. Kadb would open a
+     * fresh one behind our back, which puts a new "Allow debugging?" prompt on a TV that took the key
+     * back; the link reconnects instead, where a refusal stops it.
+     */
+    private fun live(): Kadb = kadb.takeIf { it.connectionCheck() } ?: throw IOException("connection closed")
+
+    /**
      * Kadb blocks the calling thread while it waits for the reply; that wait is interruptible, so
      * cancelling one call (a closed screen, a timeout) ends only that stream, not the connection.
      */
     override suspend fun shell(command: String): ShellResult {
-        val r = runInterruptible(Dispatchers.IO) { kadb.shell(command) }
+        val r = runInterruptible(Dispatchers.IO) { live().shell(command) }
         return ShellResult(r.output, r.exitCode)
     }
 
     override suspend fun push(bytes: ByteArray, remotePath: String) = runInterruptible(Dispatchers.IO) {
-        kadb.push(Buffer().write(bytes), remotePath, "644".toInt(8), System.currentTimeMillis())
+        live().push(Buffer().write(bytes), remotePath, "644".toInt(8), System.currentTimeMillis())
     }
 
-    override fun install(source: Source, size: Long, vararg options: String) = kadb.install(source, size, *options)
+    override fun install(source: Source, size: Long, vararg options: String) = live().install(source, size, *options)
 
-    override fun installMultiple(apks: List<File>, vararg options: String) = kadb.installMultiple(apks, *options)
+    override fun installMultiple(apks: List<File>, vararg options: String) = live().installMultiple(apks, *options)
 
     override fun push(source: Source, remotePath: String, mode: Int, lastModifiedMs: Long) =
-        kadb.push(source, remotePath, mode, lastModifiedMs)
+        live().push(source, remotePath, mode, lastModifiedMs)
 
-    override fun pull(sink: Sink, remotePath: String) = kadb.pull(sink, remotePath)
+    override fun pull(sink: Sink, remotePath: String) = live().pull(sink, remotePath)
 
-    override fun list(remoteDir: String): List<RemoteEntry> = kadb.openSync().use { sync ->
+    override fun list(remoteDir: String): List<RemoteEntry> = live().openSync().use { sync ->
         sync.list(remoteDir).map { RemoteEntry(it.name, it.mode, it.size, it.mtimeSec) }
     }
 
     override suspend fun reboot() {
-        runInterruptible(Dispatchers.IO) { kadb.open("reboot:").close() }
+        runInterruptible(Dispatchers.IO) { live().open("reboot:").close() }
     }
 
     /** `exec:` is adbd's raw service: no pty, so bytes go both ways untouched. */
     override suspend fun exec(command: String): AdbPipe {
-        val stream = runInterruptible(Dispatchers.IO) { kadb.open("exec:$command") }
+        val stream = runInterruptible(Dispatchers.IO) { live().open("exec:$command") }
         return object : AdbPipe {
             // Already buffered: `.buffer()` here would be their internal Buffer, cut off from the TV.
             override val stdin = stream.sink

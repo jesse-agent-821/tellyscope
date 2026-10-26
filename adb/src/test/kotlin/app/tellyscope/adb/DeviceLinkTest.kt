@@ -25,29 +25,39 @@ class DeviceLinkTest {
         assertEquals(1, calls)
     }
 
-    @Test fun rememberedDeviceStopsAfterThreeNotAllowed() = runTest {
-        // Each try shows "Allow debugging?" on the TV again, so a revoked key mustn't loop forever.
+    @Test fun rememberedDeviceRefusedOnceIsLoggedOut() = runTest {
+        // Each try shows "Allow debugging?" on the TV again, so a revoked key gets exactly one.
         var calls = 0
         val link = DeviceLink("tv", 5555, backgroundScope, open = { _, _ -> calls++; ConnectResult.NotAllowed }, knownGood = true)
         link.connect(); runCurrent()
         advanceTimeBy(60_000)
         assertEquals(DeviceState.NOT_ALLOWED, link.state.value)
-        assertEquals(3, calls)
+        assertTrue(link.loggedOutAt.value != null)
+        assertEquals(1, calls)
     }
 
-    @Test fun unreachableResetsTheNotAllowedCount() = runTest {
-        // A TV waking up: stalls and timeouts interleave, and it keeps retrying until it answers.
-        val answers = ArrayDeque(listOf<ConnectResult>(
-            ConnectResult.NotAllowed, ConnectResult.NotAllowed, ConnectResult.Unreachable("asleep"),
-            ConnectResult.NotAllowed, ConnectResult.NotAllowed,
-        ))
-        var calls = 0
-        val link = DeviceLink("tv", 5555, backgroundScope, knownGood = true,
-            open = { _, _ -> calls++; answers.removeFirstOrNull() ?: ConnectResult.Unreachable("off") })
+    @Test fun refusalAfterAskingIsNotALogout() = runTest {
+        // Connect again, then Deny: the user saw it happen, so it's a plain "not allowed".
+        val link = DeviceLink("tv", 5555, backgroundScope, open = { _, _ -> ConnectResult.NotAllowed }, knownGood = true)
+        link.connect(asked = true); runCurrent()
+        assertEquals(DeviceState.NOT_ALLOWED, link.state.value)
+        assertEquals(null, link.loggedOutAt.value)
+    }
+
+    @Test fun firstRefusalIsNotALogout() = runTest {
+        val link = DeviceLink("tv", 5555, backgroundScope, open = { _, _ -> ConnectResult.NotAllowed })
         link.connect(); runCurrent()
-        advanceTimeBy(30_001)
-        assertEquals(DeviceState.OFFLINE, link.state.value)
-        assertTrue(calls > 5)
+        assertEquals(null, link.loggedOutAt.value)
+    }
+
+    @Test fun holdingALogoutNeverConnects() = runTest {
+        var calls = 0
+        val link = DeviceLink("tv", 5555, backgroundScope, open = { _, _ -> calls++; ConnectResult.NotAllowed }, knownGood = true)
+        link.holdLoggedOut(1_000)
+        advanceTimeBy(60_000)
+        assertEquals(DeviceState.NOT_ALLOWED, link.state.value)
+        assertTrue(link.loggedOutAt.value != null)
+        assertEquals(0, calls)
     }
 
     @Test fun dropsToOfflineThenReconnects() = runTest {
@@ -86,8 +96,8 @@ class DeviceLinkTest {
         assertEquals(1, calls)
     }
 
-    @Test fun notAllowedAfterADropStopsAfterThreeTries() = runTest {
-        // Online once, then the key is revoked: three tries, then NOT_ALLOWED instead of a prompt every 5 s.
+    @Test fun refusedAfterADropLogsOutAfterOneTry() = runTest {
+        // Online once, then the key is revoked: one try, then a logout instead of a prompt every 5 s.
         var calls = 0
         val link = DeviceLink(
             "tv", 5555, backgroundScope,
@@ -97,7 +107,8 @@ class DeviceLinkTest {
         link.connect(); runCurrent()
         advanceTimeBy(60_000)
         assertEquals(DeviceState.NOT_ALLOWED, link.state.value)
-        assertEquals(1 + 3, calls)
+        assertTrue(link.loggedOutAt.value != null)
+        assertEquals(1 + 1, calls)
     }
 
     @Test fun disconnectClosesSessionAndResets() = runTest {
