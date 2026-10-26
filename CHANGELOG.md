@@ -14,7 +14,7 @@ until this file has a section for its version.
 
 - **Fixed:** A launcher you installed shows as protected only while it is Home. [#158](../../pull/158)
 - **New:** Uninstall the launcher on Home: Home switches back first, then it goes. [#158](../../pull/158)
-- **Improved:** The Remote's clear button is now a backspace; hold it to keep deleting. [#157](../../pull/157)
+- **Improved:** The Remote's clear button is now a backspace; hold it to keep deleting. [#162](../../pull/162)
 - **Improved:** The launcher picker drops letter tiles and says we're not affiliated. [#156](../../pull/156)
 - **Improved:** A USB camera shows a camera icon and its name once, under Input. [#154](../../pull/154)
 - **Improved:** On Fire TV, the Remote's Home opens your default launcher. [#153](../../pull/153)
