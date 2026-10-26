@@ -3,6 +3,7 @@
 package app.tellyscope
 
 import app.tellyscope.data.NetworkNames
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -49,6 +50,17 @@ class NetworkNamesTest {
         now += 11 * 60_000
         names.of(listOf("192.0.2.47"))
         assertEquals(2, asked.get())
+    }
+
+    @Test fun aQuickAnswerStillRefreshesWhenOld() = runBlocking {
+        // Unconfined answers before the lookup is even stored, the race a fast resolver can win on IO.
+        val asked = AtomicInteger()
+        var now = 0L
+        val names = NetworkNames(keep = 10.minutes, clock = { now }, context = Dispatchers.Unconfined,
+            resolve = { "box-${asked.incrementAndGet()}" })
+        assertEquals(mapOf("192.0.2.47" to "box-1"), names.of(listOf("192.0.2.47")))
+        now += 11 * 60_000
+        assertEquals(mapOf("192.0.2.47" to "box-2"), names.of(listOf("192.0.2.47")))
     }
 
     @Test fun aFailingLookupIsNoName() = runBlocking {

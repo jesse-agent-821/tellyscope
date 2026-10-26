@@ -3,6 +3,7 @@
 package app.tellyscope.data
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -11,6 +12,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -27,8 +29,9 @@ class NetworkNames(
     private val keep: Duration = 10.minutes,
     private val clock: () -> Long = System::currentTimeMillis,
     private val resolve: (String) -> String? = { ip -> InetAddress.getByName(ip).canonicalHostName },
+    context: CoroutineContext = Dispatchers.IO,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + context)
     private val known = ConcurrentHashMap<String, Pair<Long, String?>>()
     private val asking = ConcurrentHashMap<String, Deferred<String?>>()
 
@@ -37,12 +40,13 @@ class NetworkNames(
         val now = clock()
         val asks = addresses.distinct()
             .filter { a -> known[a]?.let { now - it.first > keep.inWholeMilliseconds } ?: true }
-            .map { a -> asking.computeIfAbsent(a) { ask(a) } }
+            // Started only once it's in [asking], so a quick answer can't remove itself before it's there.
+            .map { a -> asking.computeIfAbsent(a) { ask(a) }.also { it.start() } }
         if (asks.isNotEmpty()) withTimeoutOrNull(wait) { asks.awaitAll() }
         return addresses.mapNotNull { a -> known[a]?.second?.let { a to it } }.toMap()
     }
 
-    private fun ask(address: String) = scope.async {
+    private fun ask(address: String) = scope.async(start = CoroutineStart.LAZY) {
         val name = runCatching { clean(resolve(address), address) }.getOrNull()
         known[address] = clock() to name
         asking.remove(address)
