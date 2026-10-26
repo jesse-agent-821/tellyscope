@@ -12,6 +12,7 @@ until this file has a section for its version.
 
 ## Unreleased
 
+- **Fixed:** A TV that removes this phone's access logs you out instead of re-asking. [#149](../../pull/149)
 - **New:** A connection left open after Remove offers Check again and Restart the TV. [#148](../../pull/148)
 
 ## 0.9.0 — 2026-10-26
