@@ -12,19 +12,14 @@ until this file has a section for its version.
 
 ## 0.10.0 — 2026-10-26
 
-- **Improved:** Tweaks keeps Another home screen after you've added a launcher. [#165](../../pull/165)
-- **Fixed:** With no default home screen, only the TV's own launcher stays protected. [#163](../../pull/163)
-- **Fixed:** Launchers you installed offer Set as default and Uninstall again. [#163](../../pull/163)
-- **Fixed:** The home screen card hides once you've installed a launcher. [#163](../../pull/163)
-- **Fixed:** A launcher you installed shows as protected only while it is Home. [#158](../../pull/158)
-- **New:** Uninstall the launcher on Home: Home switches back first, then it goes. [#158](../../pull/158)
+- **Improved:** Once you've added a launcher, its card hides; Tweaks keeps Choose one. [#165](../../pull/165)
+- **Fixed:** Only the launcher on Home is protected, or the TV's own with no default. [#163](../../pull/163)
 - **Improved:** The Remote's clear button is now a backspace; hold it to keep deleting. [#162](../../pull/162)
-- **Improved:** The launcher picker drops letter tiles and says we're not affiliated. [#156](../../pull/156)
+- **New:** Uninstall the launcher on Home: Home switches back first, then it goes. [#158](../../pull/158)
 - **Improved:** A USB camera shows a camera icon and its name once, under Input. [#154](../../pull/154)
 - **Improved:** On Fire TV, the Remote's Home opens your default launcher. [#153](../../pull/153)
 - **New:** Install a recommended home screen from the TV's Play Store, then switch to it. [#152](../../pull/152)
-- **Improved:** Setting a launcher as default asks before turning on its accessibility service. [#150](../../pull/150)
-- **New:** Turn a launcher's accessibility service on later from the TV's page. [#150](../../pull/150)
+- **Improved:** A launcher's accessibility service turns on only if you say so, then or later. [#150](../../pull/150)
 - **Fixed:** A TV that removes this phone's access logs you out instead of re-asking. [#149](../../pull/149)
 - **New:** A connection left open after Remove offers Check again and Restart the TV. [#148](../../pull/148)
 
