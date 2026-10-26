@@ -6,6 +6,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -22,6 +23,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.LocalDate
+import java.time.ZoneId
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -36,6 +39,13 @@ class LoggedOutTest {
     private val devices = mutableStateOf(listOf(tv("projector", "Projector"), tv("kitchen", "Kitchen")))
     private var viewed: String? = null
 
+    /** The paused clock doesn't flush state writes, so tell the watch about this one before stepping. */
+    private fun logOut(id: String) {
+        devices.value = devices.value.map { if (it.id == id) tv(it.id, it.nickname!!, loggedOutAt = 1L) else it }
+        Snapshot.sendApplyNotifications()
+        compose.mainClock.advanceTimeBy(1_000)
+    }
+
     private fun watch(selected: String) {
         // The snackbar times out on the test clock, so step it by hand.
         compose.mainClock.autoAdvance = false
@@ -49,8 +59,7 @@ class LoggedOutTest {
 
     @Test fun anotherTvLoggingOutSaysSoAndViewOpensIt() {
         watch(selected = "kitchen")
-        devices.value = listOf(tv("projector", "Projector", loggedOutAt = 1L), tv("kitchen", "Kitchen"))
-        compose.mainClock.advanceTimeBy(1_000)
+        logOut("projector")
         compose.onNodeWithText(Copy.loggedOutOf("Projector")).assertExists()
         compose.onNodeWithText("View").performClick()
         compose.mainClock.advanceTimeBy(1_000)
@@ -59,8 +68,7 @@ class LoggedOutTest {
 
     @Test fun theTvOnScreenGetsThePageNotASnackbar() {
         watch(selected = "projector")
-        devices.value = listOf(tv("projector", "Projector", loggedOutAt = 1L), tv("kitchen", "Kitchen"))
-        compose.mainClock.advanceTimeBy(1_000)
+        logOut("projector")
         compose.onNodeWithText(Copy.loggedOutOf("Projector")).assertDoesNotExist()
     }
 
@@ -85,5 +93,8 @@ class LoggedOutTest {
         assertEquals("Logged out just now", Copy.loggedOutAt(0L, 60_000L))
         assertEquals("Logged out yesterday", Copy.loggedOutAt(0L, 30 * hour))
         assertEquals("Logged out 3 days ago", Copy.loggedOutAt(0L, 80 * hour))
+        // A day is a calendar day: 23:00 is "yesterday" at 09:00 the next morning, ten hours on.
+        val lateEvening = LocalDate.of(2026, 10, 25).atTime(23, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        assertEquals("Logged out yesterday", Copy.loggedOutAt(lateEvening, lateEvening + 10 * hour))
     }
 }

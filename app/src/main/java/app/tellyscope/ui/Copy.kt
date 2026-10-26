@@ -13,8 +13,11 @@ import app.tellyscope.data.Snapshot
 import app.tellyscope.data.TvSettings
 import app.tellyscope.data.sourceName
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 
@@ -219,7 +222,9 @@ object Copy {
 
     /** When the TV took the access back, on the logged-out page. */
     fun loggedOutAt(at: Long, now: Long): String {
-        val days = ((now - at) / 86_400_000).coerceAtLeast(0)
+        // Calendar days, so 23:00 reads "yesterday" the next morning.
+        val zone = ZoneId.systemDefault()
+        val days = ChronoUnit.DAYS.between(Instant.ofEpochMilli(at).atZone(zone).toLocalDate(), Instant.ofEpochMilli(now).atZone(zone).toLocalDate())
         return when {
             now - at < 5 * 60_000 -> "Logged out just now"
             days == 0L -> "Logged out today, " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(at))
