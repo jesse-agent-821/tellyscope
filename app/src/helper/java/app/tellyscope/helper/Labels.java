@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package app.tellyscope.helper;
 
+import android.app.Application;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Looper;
 import android.util.Base64;
+import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -54,7 +58,7 @@ public final class Labels {
                 line.append(",\"l\":");
                 string(line, ai.loadLabel(pm).toString());
                 line.append(",\"v\":").append(versionCode(p));
-                int[] tile = ai.icon == 0 && ai.banner != 0 ? tile(pm, ai) : null;
+                int[] tile = !ownIcon(ai.icon) && ai.banner != 0 ? tile(pm, ai) : null;
                 String icon = tile == null ? icon(pm, ai) : null;
                 if (tile != null) {
                     line.append(",\"b\":").append(tile[0] & 0xffffffffL).append(",\"a\":").append(tile[1] & 0xffffffffL);
@@ -81,7 +85,22 @@ public final class Labels {
         current.setAccessible(true);
         current.set(null, thread);
         Method get = at.getDeclaredMethod("getSystemContext");
-        return (Context) get.invoke(thread);
+        Context system = (Context) get.invoke(thread);
+        // Adaptive icons inflate against ActivityThread.currentApplication(), which a bare app_process
+        // doesn't have: without one every adaptive icon throws and the app falls back to its banner.
+        // If this fails on some Android, that fallback is still what happens; it's logged once.
+        try {
+            Application app = new Application();
+            Method attach = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
+            attach.setAccessible(true);
+            attach.invoke(app, system);
+            Field initial = at.getDeclaredField("mInitialApplication");
+            initial.setAccessible(true);
+            initial.set(thread, app);
+        } catch (Throwable t) {
+            Log.w("Tellyscope", "no Application for adaptive icons", t);
+        }
+        return system;
     }
 
     @SuppressWarnings("deprecation")
@@ -90,13 +109,12 @@ public final class Labels {
     }
 
     /**
-     * The first artwork that loads and draws: the icon, the banner, then PackageManager's own pick.
-     * TV-only apps often ship a banner and no icon, which would draw as the generic robot, so for
-     * them the banner goes first.
+     * The first artwork that loads and draws: the icon, then the banner. An app with no icon of its
+     * own would draw as the generic robot, so it sends only its banner, or nothing for a letter tile.
      */
     private static String icon(PackageManager pm, ApplicationInfo ai) {
-        int first = ai.icon == 0 && ai.banner != 0 ? BANNER : ICON;
-        for (int kind : new int[] {first, first == ICON ? BANNER : ICON, APPLICATION_ICON}) {
+        int[] kinds = ownIcon(ai.icon) ? new int[] {ICON, BANNER} : new int[] {BANNER};
+        for (int kind : kinds) {
             try {
                 String png = render(art(pm, ai, kind));
                 if (png != null) return png;
@@ -107,7 +125,12 @@ public final class Labels {
         return null;
     }
 
-    private static final int ICON = 0, BANNER = 1, APPLICATION_ICON = 2;
+    private static final int ICON = 0, BANNER = 1;
+
+    /** False when an app's icon resource is none, or the framework's default one. */
+    public static boolean ownIcon(int icon) {
+        return icon != 0 && icon != android.R.drawable.sym_def_app_icon && icon != android.R.mipmap.sym_def_app_icon;
+    }
 
     /**
      * A banner shrunk into a square icon is a thin strip of logo, so a banner-only app gets a letter
@@ -137,8 +160,7 @@ public final class Labels {
     private static Drawable art(PackageManager pm, ApplicationInfo ai, int kind) {
         switch (kind) {
             case ICON: return ai.loadIcon(pm);
-            case BANNER: return ai.loadBanner(pm); // null when the app has none
-            default: return pm.getApplicationIcon(ai);
+            default: return ai.loadBanner(pm); // null when the app has none
         }
     }
 
@@ -146,6 +168,7 @@ public final class Labels {
         if (d == null) return null;
         Bitmap b = Bitmap.createBitmap(ICON_PX, ICON_PX, Bitmap.Config.ARGB_8888);
         try {
+            if (Build.VERSION.SDK_INT >= 26 && fullBleed(d, new Canvas(b))) return png(b);
             // Fit, centred: a 16:9 banner keeps its shape instead of being squashed square.
             int w = d.getIntrinsicWidth(), h = d.getIntrinsicHeight();
             if (w > 0 && h > 0 && w != h) {
@@ -156,12 +179,33 @@ public final class Labels {
                 d.setBounds(0, 0, ICON_PX, ICON_PX);
             }
             d.draw(new Canvas(b));
-            ByteArrayOutputStream png = new ByteArrayOutputStream();
-            b.compress(Bitmap.CompressFormat.PNG, 100, png);
-            return Base64.encodeToString(png.toByteArray(), Base64.NO_WRAP);
+            return png(b);
         } finally {
             b.recycle();
         }
+    }
+
+    /**
+     * An adaptive icon drawn as its layers, square and unmasked: the TV's own mask (circle, squircle,
+     * whatever the maker chose) would differ per TV, so the app clips every icon to one shape instead.
+     * A layer is 108 dp of which the middle 72 dp is the icon, so it overhangs the square by a quarter.
+     */
+    private static boolean fullBleed(Drawable d, Canvas canvas) {
+        if (!(d instanceof AdaptiveIconDrawable)) return false;
+        AdaptiveIconDrawable adaptive = (AdaptiveIconDrawable) d;
+        int bleed = ICON_PX / 4;
+        for (Drawable layer : new Drawable[] {adaptive.getBackground(), adaptive.getForeground()}) {
+            if (layer == null) continue;
+            layer.setBounds(-bleed, -bleed, ICON_PX + bleed, ICON_PX + bleed);
+            layer.draw(canvas);
+        }
+        return true;
+    }
+
+    private static String png(Bitmap b) {
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        b.compress(Bitmap.CompressFormat.PNG, 100, png);
+        return Base64.encodeToString(png.toByteArray(), Base64.NO_WRAP);
     }
 
     /** JSON string, ASCII only: anything outside printable ASCII is a \\u escape. */

@@ -40,6 +40,7 @@ class AppNames(private val dir: File) {
         describe: suspend (List<String>) -> List<AppLabel>?,
     ): Map<String, AppName> = lock.withLock {
         val file = File(dir, fileName(tv))
+        File(dir, fileName(tv, OLD_CACHE)).delete()
         val cache = load(file).toMutableMap()
         val stale = packages.filter { p ->
             val hit = cache[p.name]
@@ -87,7 +88,14 @@ class AppNames(private val dir: File) {
             return listOfNotNull(maker, name).joinToString(" ") { BRAND_CASE[it.lowercase()] ?: it.replaceFirstChar(Char::uppercase) }
         }
 
-        private fun fileName(tv: String) = tv.replace(Regex("[^A-Za-z0-9._-]"), "_") + ".tsv"
+        /**
+         * Version 2 came with real adaptive icons: a version 1 file holds banners in their place at the
+         * same versionCode, so it's dropped and every TV is read again once.
+         */
+        private const val CACHE = ".v2.tsv"
+        private const val OLD_CACHE = ".tsv"
+
+        private fun fileName(tv: String, suffix: String = CACHE) = tv.replace(Regex("[^A-Za-z0-9._-]"), "_") + suffix
 
         /**
          * `package \t versionCode \t label \t base64 PNG \t tile colour \t tile accent`. A damaged

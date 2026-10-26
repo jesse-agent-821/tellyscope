@@ -9,6 +9,7 @@ import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
@@ -102,7 +103,7 @@ class AppNamesTest {
     }
 
     @Test fun damagedCacheLinesCostOnlyThatApp() = runBlocking {
-        File(tmp.root, "SN1.tsv").writeText("com.netflix.ninja\t10\tNetflix\tAQID\t\t\ngarbage line\ncom.example.weatherbox\tx\tW\t\t\t\n")
+        File(tmp.root, "SN1.v2.tsv").writeText("com.netflix.ninja\t10\tNetflix\tAQID\t\t\ngarbage line\ncom.example.weatherbox\tx\tW\t\t\t\n")
         val helper = Helper()
         val names = AppNames(tmp.root).names("SN1", listOf(netflix, odd), helper::describe)
         assertEquals("Netflix", names.getValue("com.netflix.ninja").label)
@@ -118,6 +119,15 @@ class AppNamesTest {
         assertEquals(0xFF101010, names.getValue(odd.name).tileColor)
         assertEquals(0xFF1ED760, names.getValue(odd.name).tileAccent)
         assertEquals(0, helper.runs.size)
+    }
+
+    @Test fun cacheFromBeforeAdaptiveIconsIsReadAgainAndDropped() = runBlocking {
+        // Version 1 held a banner where an adaptive icon now loads, at the same versionCode.
+        val old = File(tmp.root, "SN1.tsv").apply { writeText("com.example.weatherbox\t3\tWeather\tAQID\t\t\n") }
+        val helper = Helper()
+        AppNames(tmp.root).names("SN1", listOf(odd), helper::describe)
+        assertEquals(listOf("com.example.weatherbox"), helper.runs.single())
+        assertFalse(old.exists())
     }
 
     @Test fun cacheFromBeforeTilesIsReadAgain() = runBlocking {

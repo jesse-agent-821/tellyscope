@@ -12,6 +12,8 @@ until this file has a section for its version.
 
 ## Unreleased
 
+- **Fixed:** Apps show their real icon, not a banner strip or letter. [#136](../../pull/136)
+
 ## 0.8.1 — 2026-10-25
 
 - **New:** The Remote has icon keys like Google TV's phone remote, with Menu. [#132](../../pull/132)
