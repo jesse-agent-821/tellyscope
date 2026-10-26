@@ -208,6 +208,25 @@ object Copy {
     const val WRONG_CODE = "That code didn't work. Check the 6 digits on the TV and try again."
     const val UNREACHABLE = "The TV didn't answer. Check it's on and on the same Wi-Fi as this phone, then try again."
     const val PAIR_INSTEAD = "The TV didn't let this phone in yet. Pair it once with the code from the TV."
+    const val LOGGED_OUT = "You were logged out"
+    const val LOGGED_OUT_WHY =
+        "The TV removed this phone's access. Tellyscope disconnected and stopped asking, so nothing pops up on the TV until you connect again."
+    val LOGGED_OUT_CAUSES = listOf(
+        "Revoke USB debugging authorisations was chosen on the TV.",
+        "Remove all other access was used from another phone, or from another Tellyscope build on this phone.",
+    )
+    fun loggedOutOf(name: String) = "Logged out of $name"
+
+    /** When the TV took the access back, on the logged-out page. */
+    fun loggedOutAt(at: Long, now: Long): String {
+        val days = ((now - at) / 86_400_000).coerceAtLeast(0)
+        return when {
+            now - at < 5 * 60_000 -> "Logged out just now"
+            days == 0L -> "Logged out today, " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(at))
+            days == 1L -> "Logged out yesterday"
+            else -> "Logged out $days days ago"
+        }
+    }
 
     data class Health(val ok: Boolean, val text: String)
 

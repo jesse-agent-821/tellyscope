@@ -58,6 +58,7 @@ import app.tellyscope.ui.theme.StatNumber
  * One TV, one thing at a time: the pairing code, the Allow box on the TV, or why it didn't answer.
  * Opened from a found TV's Connect; a successful connect leaves for that TV's Overview on its own.
  * [phoneKey] is this phone's fingerprint, shown so it can be checked against the TV's box.
+ * [title] heads a remembered TV by its nickname; a found one goes by its network name.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -71,6 +72,7 @@ fun ConnectScreen(
     onPair: () -> Unit,
     onRetry: () -> Unit,
     onBack: () -> Unit,
+    title: String? = null,
 ) {
     Scaffold(
         topBar = {
@@ -117,7 +119,7 @@ fun ConnectScreen(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(DeviceIcons.Tv, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
-                    listOfNotNull(hit.hostname ?: "Android device", hit.maker).distinct().joinToString(" · "),
+                    title ?: listOfNotNull(hit.hostname ?: "Android device", hit.maker).distinct().joinToString(" · "),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

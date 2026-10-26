@@ -35,7 +35,8 @@ The access warning, Who has access and Remove all other access use those
 of "shield", "gpp_good", "gpp_maybe", "lock_reset", "smartphone", "lan",
 "laptop", "desktop_windows" and "help_outline"; the Connected devices card
 those of "bluetooth", "headphones", "keyboard", "mouse", "sports_esports",
-"usb", "speaker" and "settings_input_hdmi".
+"usb", "speaker" and "settings_input_hdmi". The logged-out page and the
+logged-out badge on a TV's chip use that of "logout".
 
 --------------------------------------------------------------------------------
 Store badges in docs/badges/ (README only, not in the app)

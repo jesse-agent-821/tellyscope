@@ -257,7 +257,14 @@ internal fun HeroMorphOverlay(device: Device, morph: HeroMorph, collapse: () -> 
     }
 }
 
-/** One chip per TV to switch, offline ones dimmed, then "+ Device" as the last chip. */
+@Composable
+private fun LoggedOutBadge() {
+    Box(Modifier.size(14.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error), contentAlignment = Alignment.Center) {
+        Icon(DeviceIcons.Logout, contentDescription = Copy.LOGGED_OUT, Modifier.size(10.dp), tint = MaterialTheme.colorScheme.onError)
+    }
+}
+
+/** One chip per TV to switch, offline ones dimmed (logged-out ones badged instead), then "+ Device" as the last chip. */
 @Composable
 private fun TvChips(state: UiState, actions: DeviceActions) {
     FlowRow(
@@ -273,10 +280,13 @@ private fun TvChips(state: UiState, actions: DeviceActions) {
                 leadingIcon = {
                     Box {
                         Icon(DeviceIcons.of(deviceKind(d)), contentDescription = deviceKind(d).word(), Modifier.size(18.dp))
-                        Box(Modifier.align(Alignment.BottomEnd).offset(x = 3.dp, y = 3.dp)) { StateDot(d.state) }
+                        Box(Modifier.align(Alignment.BottomEnd).offset(x = 3.dp, y = 3.dp)) {
+                            // A logged-out TV keeps its badge, so the logout can still be found from another TV.
+                            if (d.loggedOutAt != null) LoggedOutBadge() else StateDot(d.state)
+                        }
                     }
                 },
-                modifier = if (d.state == DeviceState.Online) Modifier else Modifier.alpha(0.6f),
+                modifier = if (d.state == DeviceState.Online || d.loggedOutAt != null) Modifier else Modifier.alpha(0.6f),
             )
         }
         // Adding a TV sits with the TVs, as the last chip.

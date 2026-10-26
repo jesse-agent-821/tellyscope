@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.core.content.ContextCompat
@@ -41,6 +42,8 @@ import app.tellyscope.adb.Connector
 import app.tellyscope.adb.StatsProfile
 import app.tellyscope.data.AdbDeviceSource
 import app.tellyscope.data.AndroidPhoneStorage
+import app.tellyscope.data.Device
+import app.tellyscope.data.DeviceState
 import app.tellyscope.data.FakeDeviceSource
 import app.tellyscope.data.FoldBook
 import app.tellyscope.data.KeyHaptics
@@ -48,24 +51,31 @@ import app.tellyscope.data.UpdateCheck
 import app.tellyscope.ui.AccessActions
 import app.tellyscope.ui.AccessScreen
 import app.tellyscope.ui.AdvancedScreen
+import app.tellyscope.ui.ConnectScreen
 import app.tellyscope.ui.Copy
 import app.tellyscope.ui.DebloatScreen
 import app.tellyscope.ui.DeviceActions
 import app.tellyscope.ui.DeviceTabsScreen
 import app.tellyscope.ui.Done
+import app.tellyscope.ui.LoggedOutScreen
 import app.tellyscope.ui.PermissionScreen
 import app.tellyscope.ui.RemoteActions
 import app.tellyscope.ui.RemoteScreen
 import app.tellyscope.ui.ReportKind
 import app.tellyscope.ui.ReportScreen
+import app.tellyscope.ui.RowState
 import app.tellyscope.ui.ScanScreen
 import app.tellyscope.ui.SettingsScreen
 import app.tellyscope.ui.TellyscopeViewModel
 import app.tellyscope.ui.UpdateDialog
 import app.tellyscope.ui.WelcomeScreen
+import app.tellyscope.ui.brands
+import app.tellyscope.ui.connectTitle
+import app.tellyscope.ui.name
 import app.tellyscope.ui.theme.TellyscopeTheme
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -175,6 +185,9 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
     var debloat by rememberSaveable { mutableStateOf(false) }
     var settings by rememberSaveable { mutableStateOf(false) }
     var access by rememberSaveable { mutableStateOf(false) }
+    // Connect again from the logged-out page: which TV, and since when, for its Allow screen.
+    var rejoinId by rememberSaveable { mutableStateOf<String?>(null) }
+    var rejoinSince by rememberSaveable { mutableStateOf(0L) }
 
     // "*/*": file managers label .apks and .xapk bundles inconsistently, so a narrower type would grey them out.
     val pickApp = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { vm.pickedApp(it) }
@@ -190,9 +203,19 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.checkForUpdate() }
 
     Snackbars(snackbar, vm.done, vm.notice, vm::doneShown, vm::noticeShown) { vm.undo(it.entry, it.deviceId) }
+    LoggedOutSnackbars(snackbar, { state.devices }, { state.selectedId }, onView = vm::select)
 
     // A newly connected TV becomes the selection; leave the add flow then, not on tap.
-    LaunchedEffect(state.selectedId) { adding = false; remote = false; advanced = false; debloat = false; settings = false; access = false }
+    LaunchedEffect(state.selectedId) { adding = false; remote = false; advanced = false; debloat = false; settings = false; access = false; rejoinId = null }
+    // Logged out mid-screen: the page takes over, and the TV comes back on Overview once allowed again.
+    val loggedOutAt = state.selected?.loggedOutAt
+    LaunchedEffect(loggedOutAt) { if (loggedOutAt != null) { remote = false; advanced = false; debloat = false; settings = false; access = false } }
+    // The Allow screen while the TV is asked; allowed lands on Overview, a Deny there is a plain refusal (its card).
+    val rejoining = state.selected?.takeIf { it.id == rejoinId && it.state == DeviceState.Waiting }
+    LaunchedEffect(state.selected?.state, loggedOutAt) {
+        val st = state.selected?.state
+        if (st == DeviceState.Online || (st == DeviceState.NotAllowed && loggedOutAt == null)) rejoinId = null
+    }
 
     if (state.selected == null || adding) {
         BackHandler(enabled = adding) { adding = false }
@@ -211,6 +234,37 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
     } else if (state.report != null) {
         BackHandler { vm.closeReport() }
         state.report?.let { ReportScreen(it, onOpened = vm::reportOpened, close = vm::closeReport) }
+    } else if (rejoining != null) {
+        val cancel = { vm.cancelReconnect(rejoining.id); rejoinId = null }
+        BackHandler(onBack = cancel)
+        ConnectScreen(
+            hit = rejoining.hit,
+            row = RowState.Waiting(rejoinSince),
+            now = state.now,
+            brand = brands.first(),
+            phoneKey = remember { Connector.fingerprint() },
+            onCode = {},
+            onPair = {},
+            onRetry = { vm.reconnect(rejoining.id) },
+            onBack = cancel,
+            title = connectTitle(rejoining),
+        )
+    } else if (state.selected != null && loggedOutAt != null) {
+        val selected = state.selected!!
+        // Back to TVs: another remembered TV, online ones first, else the scan list.
+        val back = {
+            val other = state.devices.filter { it.id != selected.id }
+            val next = other.firstOrNull { it.state == DeviceState.Online } ?: other.firstOrNull()
+            if (next != null) vm.select(next.id) else { adding = true; vm.rescan() }
+        }
+        BackHandler(onBack = back)
+        LoggedOutScreen(
+            device = selected,
+            loggedOutAt = loggedOutAt,
+            now = state.now,
+            onConnect = { rejoinId = selected.id; rejoinSince = System.currentTimeMillis(); vm.reconnect(selected.id) },
+            onBack = back,
+        )
     } else if (remote) {
         BackHandler { remote = false }
         DisposableEffect(Unit) { onDispose { vm.closeRemote() } }
@@ -348,6 +402,29 @@ internal fun Snackbars(
         notice.filterNotNull().collect { message ->
             noticeShown()
             host.showSnackbar(message, duration = SnackbarDuration.Short)
+        }
+    }
+}
+
+/**
+ * A TV logged out while another one is on screen gets one snackbar; View opens its logged-out page.
+ * TVs already logged out at launch get none, their chip badge says it. Read through [devices] and
+ * [selectedId] so the watch outlives each change instead of restarting and cancelling its snackbar.
+ */
+@Composable
+internal fun LoggedOutSnackbars(host: SnackbarHostState, devices: () -> List<Device>, selectedId: () -> String?, onView: (String) -> Unit) {
+    LaunchedEffect(host) {
+        var seen: Set<String>? = null
+        snapshotFlow { devices().filter { it.loggedOutAt != null } }.collect { out ->
+            val ids = out.map { it.id }.toSet()
+            val fresh = seen?.let { before -> out.filter { it.id !in before && it.id != selectedId() } }.orEmpty()
+            seen = ids
+            fresh.forEach { d ->
+                launch {
+                    val result = host.showSnackbar(Copy.loggedOutOf(name(d)), actionLabel = "View", duration = SnackbarDuration.Long)
+                    if (result == SnackbarResult.ActionPerformed) onView(d.id)
+                }
+            }
         }
     }
 }
