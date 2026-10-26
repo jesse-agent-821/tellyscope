@@ -12,6 +12,7 @@ until this file has a section for its version.
 
 ## Unreleased
 
+- **Fixed:** The Remote's clear button empties the TV's text box in apps that ignored it. [#157](../../pull/157)
 - **Improved:** A USB camera shows a camera icon and its name once, under Input. [#154](../../pull/154)
 - **Improved:** On Fire TV, the Remote's Home opens your default launcher. [#153](../../pull/153)
 - **New:** Install a recommended home screen from the TV's Play Store, then switch to it. [#152](../../pull/152)
