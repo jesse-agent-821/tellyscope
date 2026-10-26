@@ -10,15 +10,16 @@ Changes merged into `dev` collect under `## Unreleased`. A release renames
 that heading to its version and date. A pull request into `main` fails CI
 until this file has a section for its version.
 
-## Unreleased
+## 0.10.0 — 2026-10-26
 
 - **Fixed:** A launcher you installed shows as protected only while it is Home. [#158](../../pull/158)
 - **New:** Uninstall the launcher on Home: Home switches back first, then it goes. [#158](../../pull/158)
 - **Fixed:** The Remote's clear button empties the TV's text box in apps that ignored it. [#157](../../pull/157)
+- **Improved:** The launcher picker drops letter tiles and says we're not affiliated. [#156](../../pull/156)
 - **Improved:** A USB camera shows a camera icon and its name once, under Input. [#154](../../pull/154)
 - **Improved:** On Fire TV, the Remote's Home opens your default launcher. [#153](../../pull/153)
 - **New:** Install a recommended home screen from the TV's Play Store, then switch to it. [#152](../../pull/152)
-- **Improved:** Setting a launcher as default asks separately before turning on its accessibility service, and the TV's page offers to turn it on later.
+- **Improved:** Setting a launcher as default asks separately before turning on its accessibility service, and the TV's page offers to turn it on later. [#150](../../pull/150)
 - **Fixed:** A TV that removes this phone's access logs you out instead of re-asking. [#149](../../pull/149)
 - **New:** A connection left open after Remove offers Check again and Restart the TV. [#148](../../pull/148)
 
