@@ -12,6 +12,7 @@ until this file has a section for its version.
 
 ## 0.10.0 — 2026-10-26
 
+- **Improved:** Tweaks keeps Another home screen after you've added a launcher. [#165](../../pull/165)
 - **Fixed:** With no default home screen, only the TV's own launcher stays protected. [#163](../../pull/163)
 - **Fixed:** Launchers you installed offer Set as default and Uninstall again. [#163](../../pull/163)
 - **Fixed:** The home screen card hides once you've installed a launcher. [#163](../../pull/163)

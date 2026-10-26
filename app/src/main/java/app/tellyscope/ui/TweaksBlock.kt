@@ -56,7 +56,7 @@ fun TweaksBlock(ui: DeviceUi, actions: DeviceActions) {
     }
     ButtonRow(Copy.CACHES_TITLE, Copy.CACHES_TEXT, Copy.CACHES_BUTTON, enabled = ui.busy == null, actions.clearCaches)
     ButtonRow(Copy.SCREENSHOT_TITLE, Copy.SCREENSHOT_TEXT, Copy.SCREENSHOT_BUTTON, enabled = ui.busy == null, actions.screenshot)
-    if (offerChoose(ui.apps)) ButtonRow(Copy.ANOTHER_HOME, Copy.ANOTHER_HOME_TEXT, Copy.CHOOSE_ONE, enabled = ui.busy == null, actions.installLauncher)
+    if (hasPlayStore(ui.apps)) ButtonRow(Copy.ANOTHER_HOME, Copy.ANOTHER_HOME_TEXT, Copy.CHOOSE_ONE, enabled = ui.busy == null, actions.installLauncher)
     if (askDns) DnsDialog(onDismiss = { askDns = false }) { host -> askDns = false; actions.setDns(host) }
 }
 

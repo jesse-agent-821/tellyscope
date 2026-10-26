@@ -162,6 +162,8 @@ object Copy {
 
     fun launcherInstalled(name: String) = "$name is installed. Press Home on the remote to pick it."
 
+    fun launcherIsHome(name: String) = "$name is already your home screen."
+
     const val NO_STORE = "The Play Store didn't open"
 
     fun noStoreText(tv: String, name: String) =

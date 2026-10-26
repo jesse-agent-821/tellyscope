@@ -27,6 +27,7 @@ import app.tellyscope.ui.PLAY_STORE
 import app.tellyscope.ui.STORE_POLL_MS
 import app.tellyscope.ui.STORE_WAIT_MS
 import app.tellyscope.ui.TellyscopeViewModel
+import app.tellyscope.ui.hasPlayStore
 import app.tellyscope.ui.offerChoose
 import app.tellyscope.ui.offerLauncher
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +66,7 @@ private class StoreTv : DeviceSource by FakeDeviceSource(FakeDeviceSource.Scenar
     val opened = mutableListOf<String>()
     var states = ArrayDeque<StoreState>()
     var installed = false
+    var onHome = false
     var hidden = false
     val switched = mutableListOf<Pair<String, Boolean>>()
 
@@ -74,7 +76,11 @@ private class StoreTv : DeviceSource by FakeDeviceSource(FakeDeviceSource.Scenar
     override suspend fun history(deviceId: String) = emptyList<HistoryEntry>()
 
     override suspend fun apps(deviceId: String) = listOf(store, stock) +
-        if (installed) listOf(AppInfo(PROJECTIVY, "Projectivy Launcher", null, false, true, null, "1.0", homeInstead = TV_HOME, homeService = true)) else emptyList()
+        when {
+            onHome -> listOf(AppInfo(PROJECTIVY, "Projectivy Launcher", null, false, true, "this is your home screen", "1.0", home = true, listedLauncher = true))
+            installed -> listOf(AppInfo(PROJECTIVY, "Projectivy Launcher", null, false, true, null, "1.0", homeInstead = TV_HOME, homeService = true))
+            else -> emptyList()
+        }
 
     override suspend fun openStore(deviceId: String, packageName: String): Boolean {
         opened += packageName
@@ -185,6 +191,23 @@ class LauncherFlowTest {
         assertTrue(source.switched.isEmpty())
     }
 
+    @Test fun aLauncherAlreadyOnTheTvGoesStraightToMakeItHome() = with(test) {
+        source.installed = true
+        started().installLauncher(PROJECTIVY)
+        runCurrent()
+        assertTrue(source.opened.isEmpty()) // no Store detour
+        assertEquals(LauncherFlow.Step.Installed, step)
+    }
+
+    @Test fun theLauncherAlreadyOnHomeSaysSo() = with(test) {
+        source.onHome = true
+        started().installLauncher(PROJECTIVY)
+        runCurrent()
+        assertTrue(source.opened.isEmpty())
+        assertNull(step)
+        assertEquals(Copy.launcherIsHome("Projectivy Launcher"), vm.notice.value)
+    }
+
     @Test fun closingStopsTheWait() = with(test) {
         started().installLauncher(PROJECTIVY)
         runCurrent()
@@ -222,7 +245,7 @@ class LauncherScreenTest {
         assertFalse(offerLauncher(listOf(store, stock, other), hidden = false))
     }
 
-    @Test fun anAddedLauncherOnHomeWithTheStockOneOffGetsNoCardAndNoTweaksRow() {
+    @Test fun anAddedLauncherOnHomeWithTheStockOneOffGetsNoCardButKeepsTheTweaksRow() {
         // Stock launcher disabled by hand or by Debloat: Projectivy is Home with no homeBack.
         val off = stock.copy(enabled = false, home = false)
         val projectivy = AppInfo(PROJECTIVY, "Projectivy Launcher", null, false, true, "this is your home screen", "1.0", home = true, listedLauncher = true)
@@ -232,9 +255,12 @@ class LauncherScreenTest {
         val other = AppInfo("com.example.home", "Home", null, false, true, null, "1.0", removable = true, home = true)
         assertFalse(offerChoose(listOf(store, off, other)))
         assertTrue(offerChoose(listOf(store, stock)))
+        // Tweaks keeps Choose one whenever the Store is there, to try another.
+        assertTrue(hasPlayStore(listOf(store, off, projectivy)))
+        assertFalse(hasPlayStore(listOf(stock, projectivy))) // Fire TV
     }
 
-    @Test fun anAddedLauncherThatIsNotHomeStillHidesTheCardAndTheTweaksRow() {
+    @Test fun anAddedLauncherThatIsNotHomeStillHidesTheCard() {
         // Installing a second launcher clears the default: nothing is Home, and both are on.
         val noDefault = stock.copy(home = false, protectedReason = "this is your home screen")
         val projectivy = AppInfo(PROJECTIVY, "Projectivy Launcher", null, false, true, null, "1.0", removable = true, listedLauncher = true, homeInstead = TV_HOME, answersHome = true)

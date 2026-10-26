@@ -68,7 +68,7 @@ const val PLAY_STORE = "com.android.vending"
 /**
  * Install a home screen is offered on the Apps tab while the TV has the Play Store and no launcher
  * was added, Home or not, and there's no second launcher, until Not now; Tweaks offers it whenever
- * the Store is there and no launcher was added.
+ * the Store is there, launcher added or not, so there's always a way to try another.
  */
 internal fun hasPlayStore(apps: List<AppInfo>) = apps.any { it.packageName == PLAY_STORE && it.enabled }
 

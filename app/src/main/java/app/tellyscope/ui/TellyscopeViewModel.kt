@@ -688,6 +688,16 @@ class TellyscopeViewModel(
         val id = _state.value.selectedId ?: return
         launcherJob?.cancel()
         val step = { s: LauncherFlow.Step -> updateDevice(id) { it.copy(launcher = it.launcher?.let { _ -> LauncherFlow(s, pkg) }) } }
+        // Already on the TV (picked from Tweaks after a launcher was added): no Store detour.
+        _state.value.device.apps.firstOrNull { it.packageName == pkg && it.enabled }?.let { have ->
+            if (have.homeInstead != null) {
+                step(LauncherFlow.Step.Installed)
+            } else {
+                updateDevice(id) { it.copy(launcher = null) }
+                _notice.value = if (have.home) Copy.launcherIsHome(launcherName(pkg)) else Copy.launcherInstalled(launcherName(pkg))
+            }
+            return
+        }
         step(LauncherFlow.Step.Waiting)
         launcherJob = viewModelScope.launch {
             val opened = try {
