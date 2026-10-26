@@ -98,6 +98,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
     /** TVs whose Apps tab got Not now on the card about a better home screen. */
     private val launcherCards = FoldBook(File(appContext.filesDir, "launcher-card.properties"))
     private val mine = MineBook(File(appContext.filesDir, "mine.tsv"))
+    private val networkNames = NetworkNames()
     /** Last label seen per package, so history entries read like the app list. */
     private val labels = ConcurrentHashMap<String, String>()
     /** Per TV, the session [fireHome] read on and the launcher it found. */
@@ -767,7 +768,10 @@ class AdbDeviceSource(context: Context) : DeviceSource {
     override suspend fun access(deviceId: String): TvAccess {
         val a = Access(session(deviceId))
         val port = links[deviceId]?.port ?: Access.CLASSIC_PORT
-        return TvAccess.of(a.clients(port), a.keys(), phoneAddresses(), deviceId, mine[key(deviceId)], phoneFingerprint())
+        val access = TvAccess.of(a.clients(port), a.keys(), phoneAddresses(), deviceId, mine[key(deviceId)], phoneFingerprint())
+        // Other computers only: this phone and apps on the TV itself need no name.
+        val lookup = access.connected.orEmpty().filter { it.who == AccessClient.Who.Other || it.who == AccessClient.Who.Mine }
+        return access.named(networkNames.of(lookup.map { it.address }))
     }
 
     override suspend fun markMine(deviceId: String, address: String) {

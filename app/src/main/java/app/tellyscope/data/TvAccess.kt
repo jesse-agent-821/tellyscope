@@ -20,6 +20,10 @@ data class TvAccess(
 
     val warning: Boolean get() = others.isNotEmpty()
 
+    /** The same, with [names] on the computers they belong to (address to name). */
+    fun named(names: Map<String, String>): TvAccess =
+        copy(connected = connected?.map { c -> names[c.address]?.let { c.copy(name = it) } ?: c })
+
     /** Checked, not assumed: both lists read, no other connection, and no allowed key but this phone's. */
     val onlyThisPhone: Boolean get() = connected != null && allowed != null && others.isEmpty() && allowed.none { !it.phone }
 
@@ -56,7 +60,11 @@ data class TvAccess(
     }
 }
 
-data class AccessClient(val address: String, val connections: Int, val who: Who) {
+/**
+ * [name]: the address's network name (see [NetworkNames]), null when none answered in time. It
+ * describes the address only, never which key is behind it.
+ */
+data class AccessClient(val address: String, val connections: Int, val who: Who, val name: String? = null) {
     enum class Who { Phone, Mine, Other, OnTv }
 }
 

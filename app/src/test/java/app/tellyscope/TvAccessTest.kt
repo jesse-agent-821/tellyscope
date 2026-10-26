@@ -30,6 +30,12 @@ class TvAccessTest {
     private fun access(vararg clients: AdbClient, keys: List<AllowedKey>? = listOf(phoneKey), mine: Set<String> = emptySet(), tv: String = "192.0.2.20") =
         TvAccess.of(clients.toList(), keys, setOf(phone, "fe80::1"), tv, mine, phoneFingerprint = "AA")
 
+    @Test fun namesGoOnTheirAddressOnly() {
+        val a = access(AdbClient(phone, 40000), AdbClient(other, 51234)).named(mapOf(other to "Alex-MacBook"))
+        assertEquals(listOf(null, "Alex-MacBook"), a.connected!!.map { it.name })
+        assertTrue(a.warning) // a name never makes a computer trusted
+    }
+
     @Test fun onlyThisPhoneConnectedIsNoWarning() {
         val a = access(AdbClient(phone, 40000))
         assertFalse(a.warning)
