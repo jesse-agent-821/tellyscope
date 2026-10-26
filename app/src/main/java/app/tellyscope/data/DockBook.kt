@@ -58,8 +58,12 @@ object Dock {
     /** One row of four under Back and Home; "Add to dock" goes once it's full. */
     const val MAX = 4
 
-    /** The apps the picker offers: ones a launcher can open, already-docked ones included (shown as Added). */
-    fun choices(apps: List<AppInfo>): List<AppInfo> = apps.filter { it.launchable && it.enabled }
+    /**
+     * The apps the picker offers: ones a launcher can open, already-docked ones included (shown as Added).
+     * A built-in app with only a phone-style icon (Camera, WebView, a maker's updater) is left out; one
+     * the user installed stays, whatever kind of icon it has.
+     */
+    fun choices(apps: List<AppInfo>): List<AppInfo> = apps.filter { it.launchable && it.enabled && (it.tvHome || !it.system) }
 
     fun add(dock: List<Docked>, app: AppInfo): List<Docked> =
         if (dock.size >= MAX || dock.any { it.packageName == app.packageName }) dock else dock + Docked(app.packageName, app.label)

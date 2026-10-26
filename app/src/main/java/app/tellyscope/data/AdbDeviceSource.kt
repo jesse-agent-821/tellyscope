@@ -336,6 +336,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         val userInstalled = Parsers.packages(shell.shell("pm list packages -3").output).map { it.name }.toSet()
         // Before Android 7 there's no asking which apps have an icon; the ones the user installed do.
         val launchable = Actions(shell).launchable() ?: userInstalled
+        val tvHome = Actions(shell).tvLaunchable() ?: launchable
         // Older pm rejects --show-versioncode and prints no packages; list again without it.
         val listed = Parsers.packages(shell.shell("pm list packages --show-versioncode").output)
             .ifEmpty { Parsers.packages(shell.shell("pm list packages").output) }
@@ -371,6 +372,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
                 homeService = p.name in serviceLaunchers,
                 listKeep = p.name in keep,
                 launchable = p.name in launchable,
+                tvHome = p.name in tvHome,
             )
         }.sortedBy { it.label.lowercase() }
     }

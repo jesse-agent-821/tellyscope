@@ -129,6 +129,8 @@ data class AppInfo(
     val listKeep: Boolean = false,
     /** Has an icon on a launcher, so the Remote's dock can open it. */
     val launchable: Boolean = false,
+    /** Has an icon on the TV's own home screen, not only a phone-style one. True when the TV can't say. */
+    val tvHome: Boolean = true,
 )
 
 /** An app on the Remote's dock. [label] is kept so it can be named after the app is gone. */

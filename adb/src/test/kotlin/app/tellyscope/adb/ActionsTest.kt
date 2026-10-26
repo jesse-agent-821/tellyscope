@@ -288,6 +288,14 @@ class ActionsTest {
         assertEquals(setOf("com.google.android.youtube.tv", "org.jellyfin.androidtv"), Actions(sh).launchable())
     }
 
+    @Test fun tvLaunchableAsksForTvHomeIconsOnly() = runTest {
+        val sh = FakeShell(mapOf("cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER" to ok(
+            "com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.ShellActivity\n",
+        )))
+        assertEquals(setOf("com.google.android.youtube.tv"), Actions(sh).tvLaunchable())
+        assertEquals(null, Actions(FakeShell(mapOf("cmd package" to ok("")))).tvLaunchable())
+    }
+
     @Test fun launchableIsUnknownWithoutCmd() = runTest {
         val sh = FakeShell(mapOf("cmd package" to ShellResult("", 127)))
         assertEquals(null, Actions(sh).launchable())

@@ -136,6 +136,10 @@ class Actions(private val shell: AdbShell) {
     suspend fun launchable(): Set<String>? =
         packagesIn(shell.shell(Commands.LAUNCHABLE).output).ifEmpty { null }
 
+    /** The [launchable] packages with a TV home-screen icon; null when the TV lists none of that kind. */
+    suspend fun tvLaunchable(): Set<String>? =
+        packagesIn(shell.shell("${Commands.TV_LAUNCHABLE} 2>/dev/null").output).ifEmpty { null }
+
     /** [pkg]'s accessibility service as the TV has it installed; null when it has none. */
     suspend fun homeService(pkg: String): String? =
         activitiesIn(shell.shell(Commands.A11Y_SERVICES).output).firstOrNull { it.substringBefore('/') == pkg }

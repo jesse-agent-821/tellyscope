@@ -55,6 +55,13 @@ class DockTest {
         assertEquals(listOf("com.a"), Dock.choices(apps).map { it.packageName })
     }
 
+    @Test fun thePickerLeavesOutBuiltInPhoneStyleApps() {
+        val camera = AppInfo("com.android.camera2", "Camera", null, true, true, null, "", launchable = true, tvHome = false)
+        val settings = AppInfo("com.android.tv.settings", "Settings", null, true, true, null, "", launchable = true, tvHome = true)
+        val sideloaded = app("com.example.phoneapp").copy(tvHome = false)
+        assertEquals(listOf("com.android.tv.settings", "com.example.phoneapp"), Dock.choices(listOf(camera, settings, sideloaded)).map { it.packageName })
+    }
+
     @Test fun theBookKeepsOrderAcrossARestartAndFollowsARekey() {
         val file = File(Files.createTempDirectory("dock").toFile(), "docks.tsv")
         DockBook(file).apply {

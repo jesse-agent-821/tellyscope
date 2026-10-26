@@ -13,6 +13,7 @@ until this file has a section for its version.
 ## Unreleased
 
 - **Fixed:** Apps show their real icon, not a banner strip or letter. [#136](../../pull/136)
+- **Improved:** The dock picker leaves out built-in phone-style apps like Camera. [#138](../../pull/138)
 
 ## 0.8.1 — 2026-10-25
 
