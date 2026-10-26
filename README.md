@@ -43,7 +43,7 @@ Debloat your Android TV, install apps, and browse and transfer files on it, all 
   </tr>
 </table>
 
-<sub>Rendered from the app's screenshot tests with sample data. Remote, the Install dialog and the Tweaks launcher row are drawn to match the app, and Advanced joins parts of its longer page.</sub>
+<sub>Rendered from the app's screenshot tests with sample data. The Install dialog and the Tweaks launcher row are drawn to match the app, and Advanced joins parts of its longer page.</sub>
 
 ## Get it
 

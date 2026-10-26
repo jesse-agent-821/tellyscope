@@ -12,16 +12,14 @@ until this file has a section for its version.
 
 ## 0.10.0 — 2026-10-26
 
-- **Improved:** Once you've added a launcher, its card hides; Tweaks keeps Choose one. [#165](../../pull/165)
-- **Fixed:** Only the launcher on Home is protected, or the TV's own with no default. [#163](../../pull/163)
-- **Improved:** The Remote's clear button is now a backspace; hold it to keep deleting. [#162](../../pull/162)
-- **New:** Uninstall the launcher on Home: Home switches back first, then it goes. [#158](../../pull/158)
-- **Improved:** A USB camera shows a camera icon and its name once, under Input. [#154](../../pull/154)
-- **Improved:** On Fire TV, the Remote's Home opens your default launcher. [#153](../../pull/153)
-- **New:** Install a recommended home screen from the TV's Play Store, then switch to it. [#152](../../pull/152)
-- **Improved:** A launcher's accessibility service turns on only if you say so, then or later. [#150](../../pull/150)
-- **Fixed:** A TV that removes this phone's access logs you out instead of re-asking. [#149](../../pull/149)
-- **New:** A connection left open after Remove offers Check again and Restart the TV. [#148](../../pull/148)
+- **New:** Pick a better home screen, install it from the Play Store and switch to it. [#152](../../pull/152)
+- **New:** Remove the home screen you're using; your TV switches back to its own first. [#158](../../pull/158)
+- **Improved:** A launcher's accessibility service only turns on if you say yes. [#150](../../pull/150)
+- **Improved:** The Remote's clear key deletes one letter; hold it to keep deleting. [#162](../../pull/162)
+- **Improved:** On Fire TV, the Remote's Home button opens your chosen home screen (tester needed). [#153](../../pull/153)
+- **Improved:** A USB camera shows up once, with a camera icon, under Input. [#154](../../pull/154)
+- **Fixed:** Only the home screen you actually use is protected from removal. [#163](../../pull/163)
+- **Fixed:** If your TV takes back this phone's access, you're logged out instead of asked again and again. [#149](../../pull/149)
 
 ## 0.9.0 — 2026-10-26
 
