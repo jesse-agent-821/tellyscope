@@ -3,8 +3,8 @@ name: Release
 on:
   push:
     branches: [main, dev]
-    # Alpha tags only. Prod's vX.Y.Z tags have no "-alpha." and don't match.
-    tags: ['v*-alpha.*']
+  # An alpha by hand: Run workflow on dev. Any other branch is refused below.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,7 +18,7 @@ jobs:
   # title contains [release]; anything else ends here, green. No secrets in this
   # job, and the title only ever reaches jq, never a shell.
   alpha-gate:
-    if: github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,12 +48,12 @@ jobs:
           echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
 
   # Alpha: publishes the next v<versionName>-alpha.N as a pre-release for a
-  # [release] merge into dev; pushing such a tag on a dev commit by hand does the
-  # same for that tag. app.tellyscope.alpha installs next to the release build.
+  # [release] merge into dev, or for Run workflow on dev. app.tellyscope.alpha
+  # installs next to the release build.
   alpha:
     needs: alpha-gate
-    # always(): a tag push skips the gate, and a skipped need would skip this job too.
-    if: always() && (github.ref_type == 'tag' || needs.alpha-gate.outputs.publish == 'true')
+    # always(): a manual run skips the gate, and a skipped need would skip this job too.
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.alpha-gate.outputs.publish == 'true')
     runs-on: ubuntu-latest
     # Its own key, in its own Environment: an alpha can never update a prod install, and a dev
     # push never sees the prod key.
@@ -62,49 +62,34 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0  # the tags, and dev for the check below
+          fetch-depth: 0  # the tags
 
       - name: Tag
         id: tag
         run: |
+          # Run workflow runs the chosen branch's own copy of this file, so the alpha
+          # environment allowing only dev is what really holds; this says why early.
+          if [ "$GITHUB_REF" != refs/heads/dev ]; then
+            echo "::error::Alphas come from dev only; this run is on $GITHUB_REF"
+            exit 1
+          fi
+          # One past the highest alpha of this version. The tag is pushed only after
+          # the build passes, in the pre-release step.
           NAME=$(sed -nE 's/^ *versionName = "([^"]+)".*/\1/p' app/build.gradle.kts)
-          if [ "$GITHUB_REF_TYPE" = branch ]; then
-            # A push to dev: one past the highest alpha of this version. The tag
-            # is pushed only after the build passes, in the pre-release step.
-            LAST=$(git tag -l "v$NAME-alpha.*" | sed 's/.*-alpha\.//' | grep -E '^[0-9]+$' | sort -n | tail -n 1)
-            N=$(( ${LAST:-0} + 1 ))
-            echo "tag=v$NAME-alpha.$N" >> "$GITHUB_OUTPUT"
-            echo "n=$N" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          TAG="$GITHUB_REF_NAME"
-          N="${TAG##*-alpha.}"
-          if ! [[ "$N" =~ ^[1-9][0-9]*$ ]]; then
-            echo "::error::$TAG must end in -alpha.<number>, like v0.1.0-alpha.1"
-            exit 1
-          fi
-          V="${TAG#v}"; V="${V%-alpha.*}"
-          if [ "$V" != "$NAME" ]; then
-            echo "::error::$TAG is version $V, but versionName in app/build.gradle.kts is $NAME; tag v$NAME-alpha.<number> instead"
-            exit 1
-          fi
-          git fetch --no-tags origin +refs/heads/dev:refs/remotes/origin/dev
-          if ! git merge-base --is-ancestor "$(git rev-parse "$TAG^{commit}")" origin/dev; then
-            echo "::error::$TAG is not on dev; alpha tags go on dev commits only"
-            exit 1
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          LAST=$(git tag -l "v$NAME-alpha.*" | sed 's/.*-alpha\.//' | grep -E '^[0-9]+$' | sort -n | tail -n 1)
+          N=$(( ${LAST:-0} + 1 ))
+          echo "tag=v$NAME-alpha.$N" >> "$GITHUB_OUTPUT"
           echo "n=$N" >> "$GITHUB_OUTPUT"
 
       # JDK 25: Kadb ships Java 25 bytecode.
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
       # No fallback to the release key: without the alpha secrets the job fails.
       - name: Keystore
@@ -130,10 +115,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          if [ "$GITHUB_REF_TYPE" = branch ]; then
-            git tag "$TAG" "$GITHUB_SHA"
-            git push origin "$TAG"
-          fi
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "$TAG"
           APK="Tellyscope-$TAG.apk"
           cp app/build/outputs/apk/release/app-release.apk "$APK"
           # The nearest tag before this commit, alpha or prod; a glob would find the tag just pushed.
@@ -151,14 +134,14 @@ jobs:
   # Prod: a merge into main tags vX.Y.Z from versionName and publishes the
   # signed APK. release-check.yml has already made sure the version is new.
   prod:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: release
     timeout-minutes: 30
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # the tags
 
@@ -174,13 +157,13 @@ jobs:
             echo "new=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         if: steps.version.outputs.new == 'true'
         with:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         if: steps.version.outputs.new == 'true'
 
       - name: Keystore
