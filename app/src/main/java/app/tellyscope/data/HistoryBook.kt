@@ -108,14 +108,16 @@ class HistoryBook(private val file: File? = null) {
     companion object {
         /**
          * Packages whose last disable/enable in [history] was a disable (a home switch disables the
-         * old launcher); an uninstall clears it.
+         * old launcher); an uninstall clears it. Newest disable first: undoing a switch makes Home
+         * the launcher it replaced, so after L→A→B, Restore undoes A→B, then L→A, and ends on L.
          */
         fun leftDisabled(history: List<HistoryEntry>): List<String> =
             history.filter { it.disables || it.action == Action.Enable || it.action == Action.Uninstall }
                 .sortedBy { it.id }
                 .associate { it.packageName to it }
                 .filterValues { it.disables }
-                .keys.sorted()
+                .values.sortedByDescending { it.id }
+                .map { it.packageName }
     }
 
     private fun save() {

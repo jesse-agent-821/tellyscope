@@ -193,6 +193,24 @@ class HistoryBookTest {
         assertTrue(disable.undoneAt != null)
     }
 
+    @Test fun restoreAfterTwoSwitchesEndsOnTheTvsOwnHome() = runTest {
+        // L→A→B, where L sorts before A: alphabetical order undid L→A first and ended on A.
+        val own = "com.google.android.tvlauncher"
+        val first = "me.efesser.launcher"
+        val book = HistoryBook(tmp.root.resolve("history.tsv"))
+        book.record(tv, 1_000, Action.Home, own, "A", Action.Enable, previous = mapOf("from" to "$own/.Main", "to" to "$first/.Main"))
+        book.record(tv, 2_000, Action.Home, first, "B", Action.Enable, previous = mapOf("from" to "$first/.Main", "to" to "com.spocky.projengmenu/.Main"))
+        // As the source does: turning on a launcher a switch turned off makes it Home again.
+        var home = "com.spocky.projengmenu/.Main"
+        restoreEach(book.restorable(tv)) { pkg ->
+            val switch = book.openDisable(tv, pkg)!!
+            book.entries(tv).single { it.id == switch }.previous?.get("from")?.let { home = it }
+            book.record(tv, 3_000, Action.Enable, pkg, pkg, null, undoing = switch)
+        }
+        assertEquals("$own/.Main", home)
+        assertTrue(book.restorable(tv).isEmpty())
+    }
+
     @Test fun aStoppedRestoreSaysHowFarItGot() = runTest {
         var calls = 0
         val e = runCatching {
