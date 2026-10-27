@@ -11,6 +11,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -38,6 +39,17 @@ class AppNamesTest {
         val names = AppNames(tmp.root).names("SN1", listOf(netflix, odd), helper::describe)
         assertEquals("Real ninja", names.getValue("com.netflix.ninja").label)
         assertArrayEquals(icon, names.getValue("com.netflix.ninja").icon)
+    }
+
+    @Test fun aTvsCacheIsReadOnceAndKept() = runBlocking {
+        val helper = Helper().apply { versions = mutableMapOf(netflix.name to 10, odd.name to 3) }
+        val appNames = AppNames(tmp.root)
+        val first = appNames.names("SN1", listOf(netflix, odd), helper::describe)
+        // Gone from disk: the next list still comes from memory, with the very same icon.
+        tmp.root.listFiles()!!.forEach { it.delete() }
+        val again = appNames.names("SN1", listOf(netflix, odd), helper::describe)
+        assertEquals(1, helper.runs.size)
+        assertSame(first.getValue(netflix.name).icon, again.getValue(netflix.name).icon)
     }
 
     @Test fun fallbackKeepsTheMaker() {

@@ -4,8 +4,10 @@ package app.tellyscope.data
 
 import app.tellyscope.adb.AppLabel
 import app.tellyscope.adb.Parsers
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Base64
 
@@ -19,7 +21,9 @@ class AppName(val label: String, val icon: ByteArray?, val tileColor: Long? = nu
  * Real app names and icons per TV. The TV's own labels come from `describe` (the label helper) and
  * are cached in [dir], one file per TV, so the helper only runs again for new or updated apps. When
  * the helper can't run, [KnownLabels] and then a humanised package id stand in, with no icon, and
- * that TV isn't asked again until the app restarts.
+ * that TV isn't asked again until the app restarts. Each TV's file is read once per launch, off the
+ * main thread, and kept: every list after that gets the same icon arrays, so the screen doesn't
+ * decode them again.
  */
 class AppNames(private val dir: File) {
     /** One helper run at a time; a second caller then finds the first one's results cached. */
@@ -29,6 +33,8 @@ class AppNames(private val dir: File) {
     private val unanswered = mutableSetOf<Pair<String, String>>()
     /** Asked for in this launch. A cached entry without an icon is asked for once more per launch. */
     private val asked = mutableSetOf<Pair<String, String>>()
+    /** [names]' `tv` → its cache, as read from disk once and updated since. */
+    private val loaded = mutableMapOf<String, MutableMap<String, AppLabel>>()
 
     /**
      * [tv] identifies the TV (its [historyKey]); [packages] is `pm list packages --show-versioncode`.
@@ -40,8 +46,12 @@ class AppNames(private val dir: File) {
         describe: suspend (List<String>) -> List<AppLabel>?,
     ): Map<String, AppName> = lock.withLock {
         val file = File(dir, fileName(tv))
-        File(dir, fileName(tv, OLD_CACHE)).delete()
-        val cache = load(file).toMutableMap()
+        val cache = loaded.getOrPut(tv) {
+            withContext(Dispatchers.IO) {
+                File(dir, fileName(tv, OLD_CACHE)).delete()
+                load(file).toMutableMap()
+            }
+        }
         val stale = packages.filter { p ->
             val hit = cache[p.name]
             // Without a versionCode (an older pm) a cached label is as good as it gets.
@@ -57,7 +67,8 @@ class AppNames(private val dir: File) {
             } else {
                 fresh.forEach { cache[it.packageName] = it }
                 stale.filter { s -> fresh.none { it.packageName == s.name } }.forEach { unanswered += tv to it.name }
-                save(file, cache.values)
+                val labels = cache.values.toList()
+                withContext(Dispatchers.IO) { save(file, labels) }
             }
         }
         packages.associate { p ->
