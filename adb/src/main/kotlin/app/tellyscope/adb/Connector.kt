@@ -13,6 +13,7 @@ import okio.Buffer
 import okio.Path.Companion.toPath
 import okio.Sink
 import okio.Source
+import java.io.DataInputStream
 import java.io.File
 import java.io.IOException
 import java.io.InterruptedIOException
@@ -130,10 +131,41 @@ object Connector {
         } catch (e: Exception) {
             // Kadb also throws IllegalStateException on protocol surprises; never let it escape.
             kadb.close()
-            // No answer times out; Deny makes adbd drop the socket. Both read as "not allowed".
-            if (e.isAuthFailure()) ConnectResult.NotAllowed else ConnectResult.Unreachable(e.message ?: e.javaClass.simpleName)
+            when {
+                // How a TV turns down an unpaired key varies by TLS stack and Android version, and Kadb
+                // maps only some alerts to AdbPairAuthException; the rest read as "didn't answer".
+                asksForTls(host, port) -> ConnectResult.NeedsPairing
+                // No answer times out; Deny makes adbd drop the socket. Both read as "not allowed".
+                e.isAuthFailure() -> ConnectResult.NotAllowed
+                else -> ConnectResult.Unreachable(e.message ?: e.javaClass.simpleName)
+            }
         }
     }
+
+    /**
+     * Whether [host]:[port] answers an ADB hello with STLS. Only a wireless debugging port does, and
+     * it never shows the Allow box: a key it turns down needs the pairing code.
+     */
+    private suspend fun asksForTls(host: String, port: Int): Boolean = runCatching {
+        runInterruptible(Dispatchers.IO) {
+            Socket().use { s ->
+                s.connect(InetSocketAddress(host, port), TCP_TIMEOUT_MS)
+                s.soTimeout = TCP_TIMEOUT_MS
+                s.getOutputStream().write(adbMessage(A_CNXN, 0x01000001, 256 * 1024, "host::\u0000".toByteArray()))
+                val header = ByteArray(24).also(DataInputStream(s.getInputStream())::readFully)
+                ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN).int == A_STLS
+            }
+        }
+    }.getOrElse { if (it is CancellationException) throw it else false }
+
+    private const val A_CNXN = 0x4e584e43
+    private const val A_STLS = 0x534c5453
+
+    /** An ADB packet: six little-endian words (command, two args, length, byte sum, ~command), then [data]. */
+    private fun adbMessage(command: Int, arg0: Int, arg1: Int, data: ByteArray): ByteArray =
+        ByteBuffer.allocate(24 + data.size).order(ByteOrder.LITTLE_ENDIAN)
+            .putInt(command).putInt(arg0).putInt(arg1).putInt(data.size)
+            .putInt(data.sumOf { it.toInt() and 0xff }).putInt(command.inv()).put(data).array()
 
     /**
      * Android 11+ wireless debugging: pair once with the 6-digit code, then [connect] to the connect
