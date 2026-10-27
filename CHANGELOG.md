@@ -12,6 +12,7 @@ until this file has a section for its version.
 
 ## Unreleased
 
+- **Improved:** Opening a TV reads its apps once, in one go, so Apps fills in sooner. [#173](../../pull/173)
 - **Improved:** Tellyscope stops polling your TV while it's in the background. [#172](../../pull/172)
 
 ## 0.10.0 — 2026-10-26
