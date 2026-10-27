@@ -12,6 +12,7 @@ until this file has a section for its version.
 
 ## Unreleased
 
+- **Fixed:** Restore everything always ends on your TV's own home screen. [#184](../../pull/184)
 - **Fixed:** The Remote's backspace no longer closes the TV app once the box is empty. [#183](../../pull/183)
 - **Improved:** The Remote's dock moves to the bottom; Screen off and Restart go under ⋮. [#182](../../pull/182)
 - **Improved:** Debloat says when the list is all done, and what to try next. [#181](../../pull/181)
