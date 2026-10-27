@@ -514,13 +514,15 @@ class ActionsTest {
 
     @Test fun handOffSaysWhenTheNewHomeDidNotOpen() = runTest {
         val sh = FakeShell(mapOf("am start" to ok("Error: Activity not started\n")))
-        val left = Actions(sh).handOff("com.spocky.projengmenu", "me.efesser.flauncher/.MainActivity")
-        assertTrue(left.orEmpty().startsWith("it didn't open"), left)
+        assertEquals(
+            HandOffFailed("it didn't open, so press Home on the remote to go there", "Error: Activity not started"),
+            Actions(sh).handOff("com.spocky.projengmenu", "me.efesser.flauncher/.MainActivity"),
+        )
     }
 
     @Test fun handOffSaysWhenTheOldHomeDidNotStop() = runTest {
         val sh = FakeShell(mapOf("am force-stop" to ShellResult("Error: denied\n", 1)))
-        assertEquals("the old home screen didn't close (Error: denied)", Actions(sh).handOff("com.spocky.projengmenu", "me.efesser.flauncher/.MainActivity"))
+        assertEquals(HandOffFailed("the old home screen didn't close", "Error: denied"), Actions(sh).handOff("com.spocky.projengmenu", "me.efesser.flauncher/.MainActivity"))
         assertTrue(openFlauncher in sh.ran)
     }
 }

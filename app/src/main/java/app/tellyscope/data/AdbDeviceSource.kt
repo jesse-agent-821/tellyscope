@@ -609,7 +609,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
                     previous = listOfNotNull(r.from?.let { "from" to it }, "to" to r.to, service?.takeIf { off == true }?.let { "service" to it }).toMap(),
                 ).also {
                     if (off == false) throw IllegalStateException(serviceNotOff(labels[added] ?: AppNames.fallback(added)))
-                    left?.let { throw IllegalStateException(notShown(labels[target.pkg] ?: AppNames.fallback(target.pkg), it)) }
+                    left?.let { throw ActionFailed(notShown(labels[target.pkg] ?: AppNames.fallback(target.pkg), it.reason), it.output) }
                 }
             }
             is HomeResult.Refused -> throw IllegalStateException(reasonText(r.reason))
@@ -741,7 +741,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         val service = home.from.takeIf { it in serviceLaunchers }?.let { actions.homeService(it) }?.takeIf { actions.serviceOn(it) }
         val off = service?.let { actions.setService(it, false) }
         // Last, on Try again too: with its service still on, the added launcher could take Home straight back.
-        val left = actions.currentHome()?.let { actions.handOff(home.from, it) }?.let { notShown(home.toLabel, it) }
+        val left = actions.currentHome()?.let { actions.handOff(home.from, it) }?.let { notShown(home.toLabel, it.reason) }
         // Recorded only once it's off: Undo turns back on what Reset turned off, nothing more.
         val recorded = service?.takeIf { off == true }?.let { moved + (ResetRecord.SERVICE to it) } ?: moved
         return recorded to if (off == false) serviceNotOff(home.fromLabel) else left
@@ -1137,7 +1137,7 @@ internal suspend fun switchHome(
         ).also {
             if (on == false) throw IllegalStateException(serviceNotOn(label(pkg)))
             if (off == false) throw IllegalStateException(serviceNotOff(label(was!!)))
-            left?.let { throw IllegalStateException(notShown(label(pkg), it)) }
+            left?.let { throw ActionFailed(notShown(label(pkg), it.reason), it.output) }
         }
     }
     is HomeResult.Refused -> throw IllegalStateException(reason(r.reason))
@@ -1161,7 +1161,7 @@ internal const val RESET = "reset"
 private fun serviceNotOn(app: String) =
     "$app is Home now, but its accessibility service didn't turn on, so the TV's Home button may still open its own launcher"
 
-/** Home moved, but the old launcher didn't close or [app] didn't open: [why], from [Actions.handOff]. */
+/** Home moved, but the old launcher didn't close or [app] didn't open: [why] is [HandOffFailed.reason]. */
 private fun notShown(app: String, why: String) = "$app is Home now, but $why"
 
 private fun serviceNotOff(app: String) =

@@ -9,6 +9,7 @@ import app.tellyscope.adb.AdbSession
 import app.tellyscope.adb.RemoteEntry
 import app.tellyscope.adb.ShellResult
 import app.tellyscope.data.Action
+import app.tellyscope.data.ActionFailed
 import app.tellyscope.data.HistoryBook
 import app.tellyscope.data.HistoryEntry
 import app.tellyscope.data.switchHome
@@ -141,7 +142,9 @@ class HomeSwitchTest {
     @Test fun aHomeThatDoesNotOpenStillSwitchesAndIsRecordedBeforeItSays() = runTest {
         val tv = LauncherTv(TV_HOME).apply { opens = false }
         val e = runCatching { switch(tv, FLAUNCHER) }.exceptionOrNull()
-        assertTrue(e?.message.orEmpty(), e is IllegalStateException && e.message!!.startsWith("$FLAUNCHER is Home now, but it didn't open"))
+        assertTrue(e?.message.orEmpty(), e is ActionFailed)
+        assertEquals("$FLAUNCHER is Home now, but it didn't open, so press Home on the remote to go there", e!!.message)
+        assertEquals("Error: Activity not started", (e as ActionFailed).details)
         assertEquals(FLAUNCHER, tv.home)
         assertEquals(TV_HOME, book.entries("tv").single().packageName)
     }

@@ -26,6 +26,9 @@ sealed interface HomeResult {
     data class Failed(val output: String, val details: String = output) : HomeResult
 }
 
+/** A step of [Actions.handOff] that didn't take: [reason] is one plain line, [output] what the TV printed. */
+data class HandOffFailed(val reason: String, val output: String)
+
 /**
  * [current] is Home; [others] are the launchers that can take over. With no default home, [current]
  * is the TV's own launcher, the one the others would replace, or null when none is on; [default]
@@ -235,14 +238,14 @@ class Actions(private val shell: AdbShell) {
      * service change: a service still on can pull Home straight back. Home has moved either way,
      * so a step that fails is only reported: what went wrong, or null when both took.
      */
-    suspend fun handOff(old: String?, to: String): String? {
+    suspend fun handOff(old: String?, to: String): HandOffFailed? {
         require(old == null || PACKAGE.matches(old)) { "not a package name: $old" }
         require(ACTIVITY.matches(to)) { "not an activity: $to" }
         val stop = old?.takeIf { it != to.substringBefore('/') }?.let { exec("am force-stop $it", undo = null) }
         val open = shell.shell("${Commands.OPEN_HOME} '$to' 2>&1")
         return when {
-            open.exitCode != 0 || "Error" in open.output -> "it didn't open (${open.output.trim()}), so press Home on the remote to go there"
-            stop is ActionResult.Failed -> "the old home screen didn't close (${stop.output})"
+            open.exitCode != 0 || "Error" in open.output -> HandOffFailed("it didn't open, so press Home on the remote to go there", open.output.trim())
+            stop is ActionResult.Failed -> HandOffFailed("the old home screen didn't close", stop.output)
             else -> null
         }
     }
