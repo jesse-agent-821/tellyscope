@@ -13,6 +13,7 @@ until this file has a section for its version.
 ## Unreleased
 
 - **New:** Debloat shows each app as it turns off, then what worked and what didn't. [#214](../../pull/214)
+- **Fixed:** Tapping a dock app on the Remote vibrates, like the keys do. [#PR](../../pull/PR)
 
 ## 0.12.0 — 2026-10-28
 

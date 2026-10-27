@@ -304,7 +304,9 @@ fun RemoteScreen(
                 // Under the keys, out of a thumb's way.
                 if (!typing) {
                     Spacer(Modifier.height(if (tight) 8.dp else 16.dp))
-                    DockBand(state.device.dock, state.device.apps, name(device), live, actions)
+                    CompositionLocalProvider(LocalKeyHaptics provides state.keyHaptics) {
+                        DockBand(state.device.dock, state.device.apps, name(device), live, actions)
+                    }
                 }
             }
             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
@@ -392,7 +394,7 @@ private fun RoundKey(
     icon: @Composable () -> Unit,
 ) = KeySurface(key, label, enabled, press, CircleShape, MaterialTheme.colorScheme.secondaryContainer, modifier.size(size), icon)
 
-/** Off in Settings, a key press doesn't vibrate. */
+/** Off in Settings, a key press or a dock tap doesn't vibrate. */
 private val LocalKeyHaptics = staticCompositionLocalOf { true }
 
 /**
@@ -741,6 +743,7 @@ private fun DockTile(
     onMenu: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
+    val haptics = LocalKeyHaptics.current
     val scale by animateFloatAsState(if (lifted) 1.1f else 1f, label = "dock lift")
     // The gesture outlives a recomposition; it must call the newest handlers, which see the newest dock.
     val open by rememberUpdatedState(onOpen)
@@ -760,7 +763,7 @@ private fun DockTile(
                     customActions = moves
                 }
             }
-            .pointerInput(enabled) {
+            .pointerInput(enabled, haptics) {
                 if (!enabled) return@pointerInput
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -768,7 +771,11 @@ private fun DockTile(
                     var up: PointerInputChange? = null
                     val held = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) { up = waitForUpOrCancellation(); false } ?: true
                     if (!held) {
-                        up?.let { it.consume(); open() }
+                        up?.let {
+                            it.consume()
+                            if (haptics) haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                            open()
+                        }
                         return@awaitEachGesture
                     }
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
