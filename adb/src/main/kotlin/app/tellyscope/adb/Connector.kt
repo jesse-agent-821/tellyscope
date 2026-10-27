@@ -20,6 +20,7 @@ import java.io.InterruptedIOException
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.channels.InterruptedByTimeoutException
+import javax.net.ssl.SSLException
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -133,8 +134,9 @@ object Connector {
             kadb.close()
             when {
                 // How a TV turns down an unpaired key varies by TLS stack and Android version, and Kadb
-                // maps only some alerts to AdbPairAuthException; the rest read as "didn't answer".
-                asksForTls(host, port) -> ConnectResult.NeedsPairing
+                // maps only some alerts to AdbPairAuthException; the rest read as "didn't answer". Only
+                // an alert counts: a paired TV that drops mid-handshake must keep reconnecting.
+                e.isTlsAlert() && asksForTls(host, port) -> ConnectResult.NeedsPairing
                 // No answer times out; Deny makes adbd drop the socket. Both read as "not allowed".
                 e.isAuthFailure() -> ConnectResult.NotAllowed
                 else -> ConnectResult.Unreachable(e.message ?: e.javaClass.simpleName)
@@ -186,6 +188,13 @@ object Connector {
             PairResult.Unreachable(e.message ?: e.javaClass.simpleName)
         }
     }
+
+    /**
+     * The TV sent a TLS alert: "Received fatal alert: …" on the JVM, "…_ALERT_…" from Conscrypt. A drop
+     * mid-handshake is an SSLException too ("EOF during handshake"), but names no alert.
+     */
+    private fun Throwable.isTlsAlert(): Boolean = generateSequence(this) { it.cause }
+        .any { it is SSLException && it.message.orEmpty().contains("alert", ignoreCase = true) }
 
     private fun Throwable.isAuthFailure(): Boolean =
         generateSequence(this) { it.cause }.any {

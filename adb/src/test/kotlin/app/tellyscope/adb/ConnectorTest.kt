@@ -85,16 +85,19 @@ class ConnectorTest {
         }
     }
 
+    @Test fun wirelessPortThatDropsMidHandshakeStaysUnreachable() = runBlocking<Unit> {
+        // A paired TV whose Wi-Fi blips: it asks for TLS, then the socket goes. The link must keep
+        // reconnecting, so this can't read as "needs pairing".
+        ServerSocket(0, 50, InetAddress.getByName("127.0.0.1")).use { server ->
+            thread(isDaemon = true) { while (true) runCatching { server.accept().use(::answerStls) } }
+            val r = withTimeout(30_000) { Connector.connect("127.0.0.1", server.localPort, allowWaitMs = 10_000) }
+            assertIs<ConnectResult.Unreachable>(r)
+        }
+    }
+
     /** adbd's side: read CNXN, answer STLS, then turn down every client certificate in TLS. */
     private fun refuseUnpairedKey(socket: java.net.Socket) {
-        val input = java.io.DataInputStream(socket.getInputStream())
-        val header = ByteArray(24).also(input::readFully)
-        input.skipNBytes(ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN).getInt(12).toLong())
-        val stls = 0x534c5453
-        socket.getOutputStream().write(
-            ByteBuffer.allocate(24).order(ByteOrder.LITTLE_ENDIAN)
-                .putInt(stls).putInt(0x01000000).putInt(0).putInt(0).putInt(0).putInt(stls.inv()).array(),
-        )
+        answerStls(socket)
         // The server borrows this phone's own identity; only the client check matters here.
         val id = KadbCert.ensureReady()
         val cert = CertificateFactory.getInstance("X.509").generateCertificate(id.certificatePem.inputStream())
@@ -115,5 +118,17 @@ class ConnectorTest {
             tls.enabledProtocols = arrayOf("TLSv1.3")
             runCatching { tls.startHandshake() } // throws once it rejects ours
         }
+    }
+
+    /** Reads the CNXN hello and answers STLS, as a wireless debugging port does. */
+    private fun answerStls(socket: java.net.Socket) {
+        val input = java.io.DataInputStream(socket.getInputStream())
+        val header = ByteArray(24).also(input::readFully)
+        input.skipNBytes(ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN).getInt(12).toLong())
+        val stls = 0x534c5453
+        socket.getOutputStream().write(
+            ByteBuffer.allocate(24).order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(stls).putInt(0x01000000).putInt(0).putInt(0).putInt(0).putInt(stls.inv()).array(),
+        )
     }
 }
