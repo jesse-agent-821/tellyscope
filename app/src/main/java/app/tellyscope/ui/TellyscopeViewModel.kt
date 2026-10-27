@@ -328,6 +328,12 @@ class TellyscopeViewModel(
 
     /** Keys go out one at a time, in the order pressed. */
     private val keys = Mutex()
+    /**
+     * Per TV, the letters the Remote typed that are still in the TV's text box, as far as the phone
+     * knows. Backspace deletes only these: on an empty box Delete acts as Back, and YouTube closes.
+     * Any other key may move the focus out of the box, and so may closing the Remote, so both forget them.
+     */
+    private val typed = mutableMapOf<String, Int>()
 
     private var scanJob: Job? = null
     private var sideloadJob: Job? = null
@@ -1480,6 +1486,14 @@ class TellyscopeViewModel(
             try {
                 // With the picture off, any key wakes it, the way a TV's own remote does, and does nothing else.
                 if (id in _state.value.screenOff) return@withLock wake(id)
+                if (key == RemoteKey.DEL) {
+                    // Nothing typed from here to delete: the key does nothing, and a hold stops.
+                    val left = typed[id] ?: 0
+                    if (left == 0) return@withLock false
+                    return@withLock source.press(id, key)
+                        .also { if (it) typed[id] = left - 1 else _notice.value = Copy.KEY_REFUSED }
+                }
+                typed.remove(id)
                 source.press(id, key).also { if (!it) _notice.value = Copy.KEY_REFUSED }
             } catch (e: CancellationException) {
                 throw e
@@ -1530,6 +1544,7 @@ class TellyscopeViewModel(
      * it back on, so that happens first.
      */
     fun closeRemote() {
+        typed.clear()
         val off = _state.value.screenOff
         if (off.isEmpty()) return source.closeRemote()
         _state.update { it.copy(screenOff = emptySet()) }
@@ -1556,7 +1571,12 @@ class TellyscopeViewModel(
         viewModelScope.launch {
             keys.withLock {
                 _notice.value = try {
-                    if (source.type(id, text)) null else Copy.TYPE_REFUSED
+                    if (source.type(id, text)) {
+                        typed[id] = (typed[id] ?: 0) + text.length
+                        null
+                    } else {
+                        Copy.TYPE_REFUSED
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
