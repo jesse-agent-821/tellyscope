@@ -242,7 +242,7 @@ class ScreenshotTest {
 
     /** The fake's list, among a few other models so "Which TV is this?" has a choice. */
     private suspend fun lists(id: String): Suggestions.Ready {
-        val ready = fake.suggestions(id) as Suggestions.Ready
+        val ready = fake.suggestions(id) { fake.apps(id) } as Suggestions.Ready
         val others = listOf(
             "XGIMI MoGo 2 projector", "XGIMI MoGo 3 Pro projector", "Philips 55OLED708",
             "Sony Bravia (Google TV)", "TCL C-series", "Xiaomi Mi Box S",

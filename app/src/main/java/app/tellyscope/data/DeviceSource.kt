@@ -127,9 +127,10 @@ interface DeviceSource {
 
     /**
      * What the TV's list from tellyscope-devices suggests turning off. Never throws; offline it
-     * uses the cached lists, or answers [Suggestions.Unavailable].
+     * uses the cached lists, or answers [Suggestions.Unavailable]. [apps] is the TV's app list,
+     * asked for only once a list is found.
      */
-    suspend fun suggestions(deviceId: String): Suggestions
+    suspend fun suggestions(deviceId: String, apps: suspend () -> List<AppInfo>): Suggestions
 
     /** "Pick your TV": use list [listId] for this TV from now on. */
     suspend fun pickList(deviceId: String, listId: String)

@@ -288,10 +288,10 @@ class FakeDeviceSource(
         TvFile("subtitles.srt", 61_000, clock() - 40 * 60_000L),
     )
 
-    override suspend fun suggestions(deviceId: String): Suggestions {
+    override suspend fun suggestions(deviceId: String, apps: suspend () -> List<AppInfo>): Suggestions {
         delay(600)
         val all = listOf(ListEntry(fakeList.id, fakeList.name, null, fakeList.sdk, "devices/${fakeList.id}.json", "0".repeat(64)))
-        return Suggestions.Ready(null, fakeList, 30, suggest(fakeList, appsFor(deviceId), 30), all)
+        return Suggestions.Ready(null, fakeList, 30, suggest(fakeList, apps(), 30), all)
     }
 
     override suspend fun pickList(deviceId: String, listId: String) = Unit

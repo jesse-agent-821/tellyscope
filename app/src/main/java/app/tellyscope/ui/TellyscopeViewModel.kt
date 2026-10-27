@@ -50,6 +50,7 @@ import app.tellyscope.data.Update
 import app.tellyscope.data.FoldBook
 import app.tellyscope.data.UpdateCheck
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -551,17 +552,25 @@ class TellyscopeViewModel(
                 _state.update { it.copy(device = it.device.copy(snapshot = snap)) }
             }
         }
-        // Its own job: the list download never holds up apps or stats.
-        listsJob = viewModelScope.launch { loadLists(id) }
+        // One read of the app list per open: Apps and the TV's list both use it. The list
+        // download runs in its own job, so it never holds up apps or stats.
+        val apps = CompletableDeferred<List<AppInfo>>()
+        listsJob = viewModelScope.launch { loadLists(id) { apps.await() } }
         requestJob = viewModelScope.launch { watchRequests(id) }
         accessJob = viewModelScope.launch { watchAccess(id) }
         mediumJob = viewModelScope.launch {
             // A TV that drops mid-read throws; the live flow ends and the offline card takes over.
             try {
                 // Read first: update {} may run its block again, and must never call the TV.
-                val apps = source.apps(id)
-                updateDevice(id) { it.copy(apps = apps) }
-                pruneDock(id, apps)
+                val read = try {
+                    source.apps(id)
+                } catch (e: Exception) {
+                    apps.completeExceptionally(e)
+                    throw e
+                }
+                updateDevice(id) { it.copy(apps = read) }
+                apps.complete(read)
+                pruneDock(id, read)
                 val tweaks = source.tweaks(id)
                 updateDevice(id) { it.copy(tweaks = tweaks) }
                 loadFiles()
@@ -596,8 +605,8 @@ class TellyscopeViewModel(
     fun reconnect(id: String) {
         viewModelScope.launch {
             source.reconnect(id)
-            refreshDevices()
-            select(id)
+            // A TV that came back is selected already; again would read it all twice.
+            if (!refreshDevices() || _state.value.selectedId != id) select(id)
         }
     }
 
@@ -1150,14 +1159,19 @@ class TellyscopeViewModel(
         }
     }
 
-    private suspend fun loadLists(id: String) {
-        val lists = source.suggestions(id)
-        // Once the list is known its keep entries show as protected.
-        val apps = if (lists is Suggestions.Ready) runCatching { source.apps(id) }.getOrNull() else null
+    private suspend fun loadLists(id: String, apps: suspend () -> List<AppInfo>) {
+        val lists = source.suggestions(id, apps)
+        // Once the list is known its keep entries show as protected, without reading the TV again.
+        val keep = (lists as? Suggestions.Ready)?.list?.keep.orEmpty()
         _state.update { s ->
-            if (s.selectedId != id) s else s.copy(device = s.device.copy(lists = lists, apps = apps ?: s.device.apps))
+            if (s.selectedId != id) s
+            else s.copy(device = s.device.copy(lists = lists, apps = s.device.apps.map { it.copy(listKeep = it.packageName in keep) }))
         }
     }
+
+    /** The app list on screen, or a fresh read when there's none yet. */
+    private suspend fun shownApps(id: String): List<AppInfo> =
+        _state.value.takeIf { it.selectedId == id }?.device?.apps?.ifEmpty { null } ?: source.apps(id)
 
     /**
      * Another device's "Allow debugging?" prompt, checked every few seconds while the TV's page
@@ -1343,7 +1357,7 @@ class TellyscopeViewModel(
         listsJob?.cancel()
         listsJob = viewModelScope.launch {
             source.pickList(id, listId)
-            loadLists(id)
+            loadLists(id) { shownApps(id) }
         }
     }
 
@@ -1366,7 +1380,7 @@ class TellyscopeViewModel(
             val now = source.listSource()
             _state.update { it.copy(listSource = now, device = it.device.copy(lists = null)) }
             _notice.value = Copy.listSource(now)
-            if (id != null) loadLists(id)
+            if (id != null) loadLists(id) { shownApps(id) }
         }
     }
 
@@ -1432,7 +1446,7 @@ class TellyscopeViewModel(
             val apps = runCatching { source.apps(id) }.getOrNull()
             val history = source.history(id)
             updateDevice(id) { it.copy(apps = apps ?: it.apps, busy = null, history = history) }
-            loadLists(id)
+            loadLists(id) { apps ?: source.apps(id) }
         }
     }
 

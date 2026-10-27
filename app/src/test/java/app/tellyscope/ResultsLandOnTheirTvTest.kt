@@ -7,6 +7,7 @@ import app.tellyscope.adb.RemoteKey
 import app.tellyscope.data.Action
 import app.tellyscope.data.AppInfo
 import app.tellyscope.data.Device
+import app.tellyscope.data.DeviceList
 import app.tellyscope.data.DeviceSource
 import app.tellyscope.data.DeviceState
 import app.tellyscope.data.FakeDeviceSource
@@ -35,6 +36,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -52,7 +54,14 @@ private class TwoTvs : DeviceSource by FakeDeviceSource(FakeDeviceSource.Scenari
 
     override fun live(deviceId: String): Flow<Snapshot> = emptyFlow()
 
-    override suspend fun suggestions(deviceId: String) = Suggestions.Unavailable
+    /** Set: a list found for every TV, keeping these packages. */
+    var listKeep: Set<String>? = null
+
+    override suspend fun suggestions(deviceId: String, apps: suspend () -> List<AppInfo>): Suggestions {
+        val keep = listKeep ?: return Suggestions.Unavailable
+        apps()
+        return Suggestions.Ready(null, DeviceList(deviceId, deviceId, null, null, keep, emptyList()), null, emptyList(), emptyList())
+    }
 
     override suspend fun apps(deviceId: String): List<AppInfo> {
         appsCalls++
@@ -95,6 +104,17 @@ class ResultsLandOnTheirTvTest {
         advanceTimeBy(20_000)
         assertEquals(1, source.appsCalls)
         assertEquals(listOf("app-on-tv-a"), vm.state.value.device.apps?.map { it.packageName })
+    }
+
+    @Test fun theTvsListUsesTheSameAppRead() = with(test) {
+        source.appsDelayMs = 3_000
+        source.listKeep = setOf("app-on-tv-a")
+        vm = TellyscopeViewModel(source, clock = { 0L })
+        advanceTimeBy(20_000)
+        assertEquals(1, source.appsCalls)
+        assertTrue(vm.state.value.device.lists is Suggestions.Ready)
+        // The keep mark comes from the list, not a second read of the TV.
+        assertEquals(listOf(true), vm.state.value.device.apps?.map { it.listKeep })
     }
 
     @Test fun resultForAnotherTvLeavesTheShownPageAlone() = with(test) {
