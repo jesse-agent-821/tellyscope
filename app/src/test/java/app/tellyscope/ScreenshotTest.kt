@@ -874,7 +874,7 @@ class ScreenshotTest {
     @Test fun apps_foldedSystemStaysFolded() {
         val state = deviceState().copy(foldedSystem = setOf(AppsTab.Running))
         shot("28_apps_system_folded", screen = true) { DeviceTabsScreen(state, DeviceActions(), startTab = TvTab.Apps) }
-        compose.onNodeWithText("${Copy.SYSTEM} (", substring = true).assertExists()
+        compose.onNodeWithText("${Copy.SYSTEM.text()} (", substring = true).assertExists()
         compose.onNodeWithText("System UI").assertDoesNotExist()
     }
 
