@@ -115,7 +115,7 @@ data class AppInfo(
     val system: Boolean,
     val enabled: Boolean,
     /** Why this app can't be touched, in user words; null when actions are allowed. */
-    val protectedReason: String?,
+    val protectedReason: UiText?,
     val version: String,
     /** The app's own icon as a PNG, from the TV; null shows the letter avatar. */
     val icon: ByteArray? = null,

@@ -13,6 +13,8 @@ import app.tellyscope.data.ActionFailed
 import app.tellyscope.data.HistoryBook
 import app.tellyscope.data.HistoryEntry
 import app.tellyscope.data.ResetRecord
+import app.tellyscope.data.UiText
+import app.tellyscope.data.UiTextException
 import app.tellyscope.data.fireHomeBack
 import app.tellyscope.data.fireServiceHolder
 import app.tellyscope.data.fireServiceHome
@@ -85,7 +87,7 @@ class HomeSwitchTest {
     private val book = HistoryBook()
 
     private suspend fun switch(tv: LauncherTv, pkg: String, withService: Boolean = true): HistoryEntry =
-        switchHome(Actions(tv), pkg, withService, setOf(PROJECTIVY), { it }, { it.name }) { from, undo, previous ->
+        switchHome(Actions(tv), pkg, withService, setOf(PROJECTIVY), { it }, { UiText.Raw(it.name) }) { from, undo, previous ->
             book.record("tv", 0, Action.Home, from, pkg, undo, previous = previous)
         }
 
@@ -150,7 +152,7 @@ class HomeSwitchTest {
         val tv = LauncherTv(TV_HOME).apply { opens = false }
         val e = runCatching { switch(tv, FLAUNCHER) }.exceptionOrNull()
         assertTrue(e?.message.orEmpty(), e is ActionFailed)
-        assertEquals("$FLAUNCHER is Home now, but it didn't open, so press Home on the remote to go there", e!!.message)
+        assertEquals("$FLAUNCHER is Home now, but it didn't open, so press Home on the remote to go there", (e as UiTextException).text.text())
         assertEquals("Error: Activity not started", (e as ActionFailed).details)
         assertEquals(FLAUNCHER, tv.home)
         assertEquals(TV_HOME, book.entries("tv").single().packageName)

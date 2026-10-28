@@ -8,6 +8,7 @@ import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import app.tellyscope.R
 
@@ -52,15 +53,18 @@ sealed interface UiText {
 
 private fun List<Any>.resolved(res: Resources): Array<Any> = map { if (it is UiText) it.resolve(res) else it }.toTypedArray()
 
-/** Resolves in a composable, the way `stringResource` does. */
+/** Resolves in a composable, the way `stringResource` does: again when the configuration changes. */
 @Composable
 @ReadOnlyComposable
-fun UiText.resolve(): String = resolve(LocalContext.current.resources)
+fun UiText.resolve(): String {
+    LocalConfiguration.current
+    return resolve(LocalContext.current.resources)
+}
 
 fun String.asUiText(): UiText = UiText.Raw(this)
 
 /** A failure whose message is for the user; [text] is what the screen shows. */
-class UiTextException(val text: UiText) : IllegalStateException()
+open class UiTextException(val text: UiText) : IllegalStateException()
 
 /** What went wrong, for the user: our own wording when we threw it, else the message as it came. */
 fun Throwable.why(@StringRes fallback: Int): UiText = (this as? UiTextException)?.text ?: message?.asUiText() ?: UiText(fallback)

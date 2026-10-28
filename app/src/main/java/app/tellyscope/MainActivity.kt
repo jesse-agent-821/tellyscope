@@ -50,6 +50,7 @@ import app.tellyscope.data.DeviceState
 import app.tellyscope.data.FakeDeviceSource
 import app.tellyscope.data.FoldBook
 import app.tellyscope.data.SeenBook
+import app.tellyscope.data.UiText
 import app.tellyscope.data.KeyHaptics
 import app.tellyscope.data.UpdateCheck
 import app.tellyscope.ui.AccessActions
@@ -400,7 +401,7 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
                 closeSideload = vm::closeSideload,
                 reportInstall = { s ->
                     vm.closeSideload()
-                    vm.openReport(ReportKind.Problem, s.app?.let { "Tried to install ${it.label} ${it.info.versionName.orEmpty()}".trim() }.orEmpty(), s.detail)
+                    vm.openReport(ReportKind.Problem, s.app?.let { context.getString(R.string.vm_report_tried_install, it.label, it.info.versionName.orEmpty()).trim() }.orEmpty(), s.detail)
                 },
                 openInstalled = vm::openInstalled,
                 folder = vm::folder,
@@ -458,17 +459,18 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
 internal fun Snackbars(
     host: SnackbarHostState,
     done: StateFlow<Done?>,
-    notice: StateFlow<String?>,
+    notice: StateFlow<UiText?>,
     doneShown: () -> Unit,
     noticeShown: () -> Unit,
     undo: (Done) -> Unit,
 ) {
+    val res = LocalContext.current.resources
     LaunchedEffect(host, done) {
         done.filterNotNull().collect { d ->
             doneShown()
             val result = host.showSnackbar(
-                message = Copy.done(d.entry.action, d.entry.label),
-                actionLabel = d.entry.undo?.let(Copy::undo),
+                message = Copy.done(d.entry.action, d.entry.label).resolve(res),
+                actionLabel = d.entry.undo?.let(Copy::undo)?.resolve(res),
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) undo(d)
@@ -477,7 +479,7 @@ internal fun Snackbars(
     LaunchedEffect(host, notice) {
         notice.filterNotNull().collect { message ->
             noticeShown()
-            host.showSnackbar(message, duration = SnackbarDuration.Short)
+            host.showSnackbar(message.resolve(res), duration = SnackbarDuration.Short)
         }
     }
 }
@@ -489,6 +491,7 @@ internal fun Snackbars(
  */
 @Composable
 internal fun LoggedOutSnackbars(host: SnackbarHostState, devices: () -> List<Device>, selectedId: () -> String?, onView: (String) -> Unit) {
+    val res = LocalContext.current.resources
     LaunchedEffect(host) {
         var seen: Set<String>? = null
         snapshotFlow { devices().filter { it.loggedOutAt != null } }.collect { out ->
@@ -497,7 +500,7 @@ internal fun LoggedOutSnackbars(host: SnackbarHostState, devices: () -> List<Dev
             seen = ids
             fresh.forEach { d ->
                 launch {
-                    val result = host.showSnackbar(Copy.loggedOutOf(name(d)), actionLabel = "View", duration = SnackbarDuration.Long)
+                    val result = host.showSnackbar(Copy.loggedOutOf(name(d)).resolve(res), actionLabel = res.getString(R.string.vm_logged_out_view), duration = SnackbarDuration.Long)
                     if (result == SnackbarResult.ActionPerformed) onView(d.id)
                 }
             }

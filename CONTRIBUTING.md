@@ -56,6 +56,7 @@ python3 docs/screenshots/frame.py
 - Kotlin official code style, as set up in `.editorconfig`.
 - Logic that doesn't need Android goes in `:adb`, with unit tests.
 - UI uses Material 3 Expressive components and the app theme. No hard-coded colors.
+- New UI text goes in `app/src/main/res/values/strings.xml`, never as a literal in Kotlin. Compose code reads it with `stringResource`; the ViewModel and data layer return a `UiText` the screen resolves. Counts use `<plurals>`, and values go in as format arguments, not by joining strings.
 
 ## Reporting a TV
 

@@ -3,6 +3,7 @@
 package app.tellyscope
 
 import app.tellyscope.data.Snapshot
+import app.tellyscope.data.UiText
 import app.tellyscope.ui.Copy
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -15,10 +16,10 @@ class HealthTest {
         uptimeSeconds = 60, screenOn = true, procs = emptyList(),
     )
 
-    @Test fun fine() = assertEquals(Copy.Health(true, "Running fine"), Copy.health(snap(), listOf("YouTube")))
+    @Test fun fine() = assertEquals(Copy.Health(true, UiText(R.string.copy_health_fine)), Copy.health(snap(), listOf("YouTube")))
 
     @Test fun storageBeforeMemory() {
-        assertEquals("Storage almost full", Copy.health(snap(ram = 0.95, storage = 0.95), emptyList()).text)
+        assertEquals("Storage almost full", Copy.health(snap(ram = 0.95, storage = 0.95), emptyList()).text.text())
     }
 
     @Test fun thresholdIsNinetyPercent() {
@@ -30,9 +31,9 @@ class HealthTest {
     @Test fun namesTheHeaviestOnlyWhenKnown() {
         assertEquals(
             "Memory almost full: YouTube and Netflix use the most",
-            Copy.health(snap(ram = 0.95), listOf("YouTube", "Netflix", "Kodi")).text,
+            Copy.health(snap(ram = 0.95), listOf("YouTube", "Netflix", "Kodi")).text.text(),
         )
-        assertEquals("Memory almost full", Copy.health(snap(ram = 0.95), emptyList()).text)
+        assertEquals("Memory almost full", Copy.health(snap(ram = 0.95), emptyList()).text.text())
     }
 
     @Test fun missingStatsAreNotProblems() {

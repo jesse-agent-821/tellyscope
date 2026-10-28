@@ -27,6 +27,8 @@ import java.io.IOException
 class UpdateCheckTest {
     @get:Rule val tmp = TemporaryFolder()
 
+    private val MORE = Strings.string(R.string.update_more_notes)
+
     private val minute = 60 * 1000L
     private val hour = 60 * minute
     private val day = 24 * hour
@@ -172,7 +174,7 @@ class UpdateCheckTest {
     """.trimIndent()
 
     @Test fun `prod notes keep the changelog lines, plain, capped at twelve`() {
-        val lines = dialogNotes(prodBody).lines()
+        val lines = dialogNotes(prodBody, MORE).lines()
         assertEquals(13, lines.size)
         assertEquals("- **New:** A new app icon: a telescope with a TV screen for a lens.", lines.first())
         assertEquals("…and more on GitHub", lines.last())
@@ -182,18 +184,18 @@ class UpdateCheckTest {
     @Test fun `alpha notes are just the alpha line`() {
         assertEquals(
             "Alpha build v0.2.0-alpha.1 from abdb1a8 on dev. Untested and may break; it installs as a separate app, app.tellyscope.alpha.",
-            dialogNotes(alphaBody),
+            dialogNotes(alphaBody, MORE),
         )
     }
 
     @Test fun `short notes are not cut`() {
-        assertEquals("- **Fixed:** one thing.", dialogNotes("- **Fixed:** one thing. [#9](../../pull/9)\n\n### Commits since v1\n\n- x (abc)"))
+        assertEquals("- **Fixed:** one thing.", dialogNotes("- **Fixed:** one thing. [#9](../../pull/9)\n\n### Commits since v1\n\n- x (abc)", MORE))
     }
 
     @Test fun `New is bold with the stars gone`() {
-        val first = boldSpans(dialogNotes(prodBody)).let { it.subSequence(0, it.text.indexOf('\n')) }
+        val first = boldSpans(dialogNotes(prodBody, MORE)).let { it.subSequence(0, it.text.indexOf('\n')) }
         assertEquals("- New: A new app icon: a telescope with a TV screen for a lens.", first.text)
-        assertFalse('*' in boldSpans(dialogNotes(prodBody)).text)
+        assertFalse('*' in boldSpans(dialogNotes(prodBody, MORE)).text)
         val bold = first.spanStyles.single()
         assertEquals(FontWeight.Bold, bold.item.fontWeight)
         assertEquals("New:", first.text.substring(bold.start, bold.end))

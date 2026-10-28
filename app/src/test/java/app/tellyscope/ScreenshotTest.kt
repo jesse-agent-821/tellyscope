@@ -66,6 +66,7 @@ import app.tellyscope.data.Suggested
 import app.tellyscope.data.SuggestedGroup
 import app.tellyscope.data.Proc
 import app.tellyscope.data.Suggestions
+import app.tellyscope.data.UiText
 import app.tellyscope.ui.AboutDialog
 import app.tellyscope.ui.Removal
 import app.tellyscope.ui.ConnectedDevicesCard
@@ -441,15 +442,15 @@ class ScreenshotTest {
     @Test fun md3_apps_builtin_dark() = appsTab("70_md3_apps_builtin", true, "Built-in")
     @Test fun md3_apps_offline() {
         shot("71_md3_apps_offline") { DeviceTabsScreen(offlineMd3(), DeviceActions(), startTab = TvTab.Apps) }
-        compose.onNodeWithText(Copy.RUNNING_OFFLINE).assertExists()
+        compose.onNodeWithText(Copy.RUNNING_OFFLINE.text()).assertExists()
     }
     @Test fun md3_apps_offline_dark() { shot("71_md3_apps_offline", dark = true) { DeviceTabsScreen(offlineMd3(), DeviceActions(), startTab = TvTab.Apps) } }
     // Just opened: the list is still on its way, so Apps says so rather than "Nothing here yet."
     private fun appsLoading() = md3State().let { it.copy(device = it.device.copy(apps = emptyList(), appsLoading = true)) }
     @Test fun md3_apps_loading() {
         shot("78_md3_apps_loading") { DeviceTabsScreen(appsLoading(), DeviceActions(), startTab = TvTab.Apps) }
-        compose.onNodeWithText(Copy.READING_APPS).assertExists()
-        compose.onNodeWithText(Copy.TV_OFFLINE).assertDoesNotExist()
+        compose.onNodeWithText(Copy.READING_APPS.text()).assertExists()
+        compose.onNodeWithText(Copy.TV_OFFLINE.text()).assertDoesNotExist()
     }
     @Test fun md3_apps_loading_dark() { shot("78_md3_apps_loading", dark = true) { DeviceTabsScreen(appsLoading(), DeviceActions(), startTab = TvTab.Apps) } }
     // Folded, the System header stays with its count and the protected apps go.
@@ -466,8 +467,8 @@ class ScreenshotTest {
         compose.mainClock.advanceTimeBy(1_000)
         compose.onNodeWithText("Built-in").performClick()
         compose.mainClock.advanceTimeBy(1_000)
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(Copy.SYSTEM_WHY))
-        compose.onNodeWithText(Copy.SYSTEM_WHY).performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(Copy.SYSTEM_WHY.text()))
+        compose.onNodeWithText(Copy.SYSTEM_WHY.text()).performClick()
         compose.mainClock.advanceTimeBy(1_000)
         assertEquals(AppsTab.BuiltIn to true, folded)
     }
@@ -602,17 +603,17 @@ class ScreenshotTest {
         compose.onNodeWithContentDescription("More options").performClick()
         compose.mainClock.advanceTimeBy(1_000)
         // Every group is there: this TV's items, the app's, then Forget. Rename, Forget and About open dialogs.
-        for (i in listOf("Rename this TV", Copy.HISTORY, Copy.ADVANCED_MONITOR, "Settings", Copy.SHARE, "About & licences", Copy.RESET_TV, "Forget this TV")) compose.onNodeWithText(i).assertHasClickAction()
+        for (i in listOf("Rename this TV", Copy.HISTORY.text(), Copy.ADVANCED_MONITOR.text(), "Settings", Copy.SHARE.text(), "About & licences", Copy.RESET_TV.text(), "Forget this TV")) compose.onNodeWithText(i).assertHasClickAction()
         compose.onNodeWithText(item).performClick()
         compose.mainClock.advanceTimeBy(1_000)
         return calls
     }
 
-    @Test fun tabs_menuAdvancedOpensAdvanced() = assertEquals(listOf("advanced"), pickFromMenu(Copy.ADVANCED_MONITOR))
-    @Test fun tabs_menuHistoryOpensHistory() = assertEquals(listOf("history"), pickFromMenu(Copy.HISTORY))
+    @Test fun tabs_menuAdvancedOpensAdvanced() = assertEquals(listOf("advanced"), pickFromMenu(Copy.ADVANCED_MONITOR.text()))
+    @Test fun tabs_menuHistoryOpensHistory() = assertEquals(listOf("history"), pickFromMenu(Copy.HISTORY.text()))
     @Test fun tabs_menuSettingsOpensSettings() = assertEquals(listOf("settings"), pickFromMenu("Settings"))
     @Test fun tabs_menuShareOpensShareSheet() {
-        assertEquals(emptyList<String>(), pickFromMenu(Copy.SHARE))
+        assertEquals(emptyList<String>(), pickFromMenu(Copy.SHARE.text()))
         assertSharedTellyscope()
     }
 
@@ -623,11 +624,11 @@ class ScreenshotTest {
         @Suppress("DEPRECATION") val send = chooser.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)!!
         assertEquals(Intent.ACTION_SEND, send.action)
         assertEquals("text/plain", send.type)
-        assertEquals(SHARE_TEXT, send.getStringExtra(Intent.EXTRA_TEXT))
-        assertTrue(SHARE_TEXT.endsWith(RELEASES.removeSuffix("/releases")))
+        assertEquals(SHARE_TEXT.text(), send.getStringExtra(Intent.EXTRA_TEXT))
+        assertTrue(SHARE_TEXT.text().endsWith(RELEASES.removeSuffix("/releases")))
     }
 
-    @Test fun tabs_menuResetOpensReset() = assertEquals(listOf("reset"), pickFromMenu(Copy.RESET_TV))
+    @Test fun tabs_menuResetOpensReset() = assertEquals(listOf("reset"), pickFromMenu(Copy.RESET_TV.text()))
 
     private fun settings(opened: MutableList<String> = mutableListOf()) = @Composable {
         val links = object : UriHandler { override fun openUri(uri: String) { opened += uri } }
@@ -656,7 +657,7 @@ class ScreenshotTest {
 
     @Test fun settings_shareOpensShareSheet() {
         compose.setContent { TellyscopeTheme(dark = false, dynamic = false) { settings()() } }
-        compose.onNodeWithText(Copy.SHARE).performClick()
+        compose.onNodeWithText(Copy.SHARE.text()).performClick()
         assertSharedTellyscope()
     }
 
@@ -679,7 +680,7 @@ class ScreenshotTest {
         val other = TvAccess(listOf(app.tellyscope.data.AccessClient("192.0.2.47", 1, app.tellyscope.data.AccessClient.Who.Other)), emptyList())
         val open = { compose.onNodeWithContentDescription("More options").performClick(); compose.mainClock.advanceTimeBy(1_000); Unit }
         shot("45_tabs_app_menu_warning", dark, screen = true, before = open) { DeviceTabsScreen(tabsState().let { it.copy(device = it.device.copy(access = other)) }, DeviceActions()) }
-        compose.onNodeWithText(Copy.othersConnected(1)).assertExists()
+        compose.onNodeWithText(Copy.othersConnected(1).text()).assertExists()
     }
     @Test fun tabs_appMenuWarning() = appMenuWarning(false)
     @Test fun tabs_appMenuWarning_dark() = appMenuWarning(true)
@@ -722,43 +723,43 @@ class ScreenshotTest {
     )
     private fun reset(name: String, dark: Boolean, ui: ResetUi, before: () -> Unit = {}) =
         shot(name, dark, before = before) { ResetScreen(deviceState { copy(reset = ui) }, ResetActions()) }
-    private val sportsFailed = listOf(ResetFailure(ResetPart.TurnOn, resetPlan.turnOn[4], "the TV didn't answer in time"))
+    private val sportsFailed = listOf(ResetFailure(ResetPart.TurnOn, resetPlan.turnOn[4], UiText.Raw("the TV didn't answer in time")))
 
     @Test fun reset_found() {
         reset("a1_reset_found", false, ResetUi(plan = resetPlan))
-        compose.onNodeWithText(Copy.resetFound(18)).assertExists()
-        compose.onNodeWithText(Copy.RESET_BUTTON).assertHasClickAction()
+        compose.onNodeWithText(Copy.resetFound(18).text()).assertExists()
+        compose.onNodeWithText(Copy.RESET_BUTTON.text()).assertHasClickAction()
     }
     @Test fun reset_found_dark() = reset("a1_reset_found", true, ResetUi(plan = resetPlan))
     @Test fun reset_listOpened() {
-        reset("a2_reset_list", false, ResetUi(plan = resetPlan)) { compose.onNodeWithText(Copy.turnOnApps(14)).performClick(); compose.mainClock.advanceTimeBy(1_000) }
+        reset("a2_reset_list", false, ResetUi(plan = resetPlan)) { compose.onNodeWithText(Copy.turnOnApps(14).text()).performClick(); compose.mainClock.advanceTimeBy(1_000) }
         // Seven of fourteen, then the rest behind Show all.
         compose.onNodeWithText("com.netflix.ninja").assertExists()
         compose.onNodeWithText("com.xgimi.ota").assertDoesNotExist()
-        compose.onNodeWithText(Copy.showAll(14)).assertExists()
+        compose.onNodeWithText(Copy.showAll(14).text()).assertExists()
     }
-    @Test fun reset_listOpened_dark() = reset("a2_reset_list", true, ResetUi(plan = resetPlan)) { compose.onNodeWithText(Copy.turnOnApps(14)).performClick(); compose.mainClock.advanceTimeBy(1_000) }
+    @Test fun reset_listOpened_dark() = reset("a2_reset_list", true, ResetUi(plan = resetPlan)) { compose.onNodeWithText(Copy.turnOnApps(14).text()).performClick(); compose.mainClock.advanceTimeBy(1_000) }
     @Test fun reset_nothing() {
         reset("a3_reset_nothing", false, ResetUi(plan = ResetPlan(shippedOff = 4, ownHome = "Google TV Home")))
-        compose.onNodeWithText(Copy.NOTHING_TO_RESET).assertExists()
-        compose.onNodeWithText(Copy.RESET_BUTTON).assertDoesNotExist()
+        compose.onNodeWithText(Copy.NOTHING_TO_RESET.text()).assertExists()
+        compose.onNodeWithText(Copy.RESET_BUTTON.text()).assertDoesNotExist()
     }
     @Test fun reset_nothing_dark() = reset("a3_reset_nothing", true, ResetUi(plan = ResetPlan(shippedOff = 4, ownHome = "Google TV Home")))
     private val running = ResetUi(plan = resetPlan, running = resetPlan, progress = ResetProgress(ResetPart.TurnOn, 6, 14))
     @Test fun reset_running() {
         reset("a4_reset_running", false, running)
-        compose.onNodeWithText(Copy.RESETTING).assertIsNotEnabled()
+        compose.onNodeWithText(Copy.RESETTING.text()).assertIsNotEnabled()
     }
     @Test fun reset_running_dark() = reset("a4_reset_running", true, running)
     @Test fun reset_done() {
         reset("a5_reset_done", false, ResetUi(plan = resetPlan, ran = true))
-        compose.onNodeWithText(Copy.RESET_DONE).assertExists()
+        compose.onNodeWithText(Copy.RESET_DONE.text()).assertExists()
     }
     @Test fun reset_done_dark() = reset("a5_reset_done", true, ResetUi(plan = resetPlan, ran = true))
     @Test fun reset_partlyDone() {
         reset("a6_reset_partly", false, ResetUi(plan = resetPlan, ran = true, failed = sportsFailed))
-        compose.onNodeWithText(Copy.turnedOn(13, 14)).assertExists()
-        compose.onNodeWithText(Copy.tryAgain("Sports")).assertHasClickAction()
+        compose.onNodeWithText(Copy.turnedOn(13, 14).text()).assertExists()
+        compose.onNodeWithText(Copy.tryAgain("Sports").text()).assertHasClickAction()
     }
     @Test fun reset_partlyDone_dark() = reset("a6_reset_partly", true, ResetUi(plan = resetPlan, ran = true, failed = sportsFailed))
 
@@ -986,7 +987,7 @@ class ScreenshotTest {
     }
 
     @Test fun device_tweaksDns() = shot("16_device_tweaks_dns", screen = true, before = {
-        compose.onNodeWithText(Copy.DNS_TITLE).performClick()
+        compose.onNodeWithText(Copy.DNS_TITLE.text()).performClick()
         Unit
     }) {
         Surface { Column(Modifier.padding(16.dp)) { TweaksBlock(DeviceUi(tweaks = TvTweaks(null, null)), DeviceActions()) } }
@@ -995,7 +996,7 @@ class ScreenshotTest {
     @Config(qualifiers = "w411dp-h2600dp-xxhdpi")
     @Test fun device_tweaksInHistory() {
         val history = listOf(
-            HistoryEntry(3, xgimi.ip, now - 20_000, Action.ClearCaches, "", TvSettings.CACHES, null, null),
+            HistoryEntry(3, xgimi.ip, now - 20_000, Action.ClearCaches, "", TvSettings.CACHES.text(), null, null),
             HistoryEntry(2, xgimi.ip, now - 60_000, Action.Change, "ANIMATIONS", "Animations at 0.5×", Action.Change, null, mapOf("window_animation_scale" to null)),
             HistoryEntry(1, xgimi.ip, now - 90_000, Action.Change, "PRIVATE_DNS", "Private DNS set to ${TvSettings.ADGUARD}", Action.Change, null, mapOf("private_dns_mode" to "opportunistic")),
         )
@@ -1107,20 +1108,20 @@ class ScreenshotTest {
     @Test fun screenOffSaysWhatATapDoes() {
         var off by mutableStateOf(false)
         compose.setContent { TellyscopeTheme(dynamic = false) { RemoteScreen(if (off) screenOffState() else remoteState(), RemoteActions()) } }
-        compose.onNodeWithContentDescription(Copy.MORE).performClick()
-        compose.onNodeWithText(Copy.SCREEN_OFF).assertExists()
-        compose.onNodeWithText(Copy.SCREEN_ON).assertDoesNotExist()
+        compose.onNodeWithContentDescription(Copy.MORE.text()).performClick()
+        compose.onNodeWithText(Copy.SCREEN_OFF.text()).assertExists()
+        compose.onNodeWithText(Copy.SCREEN_ON.text()).assertDoesNotExist()
         off = true
-        compose.onNodeWithText(Copy.SCREEN_ON).assertExists()
-        compose.onNodeWithText(Copy.SCREEN_OFF_WAKE, substring = true).assertExists()
+        compose.onNodeWithText(Copy.SCREEN_ON.text()).assertExists()
+        compose.onNodeWithText(Copy.SCREEN_OFF_WAKE.text(), substring = true).assertExists()
     }
 
     @Test fun android14HasNoScreenOff() {
         val s = remoteState().let { st -> st.copy(devices = st.devices.map { if (it.id == st.selectedId) it.copy(android = "14") else it }) }
         compose.setContent { TellyscopeTheme(dynamic = false) { RemoteScreen(s, RemoteActions()) } }
-        compose.onNodeWithContentDescription(Copy.MORE).performClick()
-        compose.onNodeWithText(Copy.SCREEN_OFF).assertDoesNotExist()
-        compose.onNodeWithText(Copy.REMOTE_RESTART).assertExists()
+        compose.onNodeWithContentDescription(Copy.MORE.text()).performClick()
+        compose.onNodeWithText(Copy.SCREEN_OFF.text()).assertDoesNotExist()
+        compose.onNodeWithText(Copy.REMOTE_RESTART.text()).assertExists()
     }
 
     /** The Remote never scrolls: on a short phone the D-pad shrinks and the buttons stay on screen, three of them. */
@@ -1168,7 +1169,7 @@ class ScreenshotTest {
         val three = docked + Docked("org.jellyfin.androidtv", "Jellyfin")
         shot("12_remote_dock_full", screen = true) { RemoteScreen(remoteState(apps = three), RemoteActions()) }
         // A full row has no Remote buttons pill.
-        compose.onNodeWithText(Copy.REMOTE_BUTTONS).assertDoesNotExist()
+        compose.onNodeWithText(Copy.REMOTE_BUTTONS.text()).assertDoesNotExist()
     }
 
     /**
@@ -1205,14 +1206,14 @@ class ScreenshotTest {
         before = { compose.onNodeWithContentDescription("Netflix").performSemanticsAction(SemanticsActions.OnLongClick) },
     ) { RemoteScreen(remoteState(), RemoteActions()) }
 
-    @Test fun remote_menu() = shot("12_remote_menu", screen = true, before = { compose.onNodeWithContentDescription(Copy.MORE).performClick() }) {
+    @Test fun remote_menu() = shot("12_remote_menu", screen = true, before = { compose.onNodeWithContentDescription(Copy.MORE.text()).performClick() }) {
         RemoteScreen(remoteState(), RemoteActions())
     }
 
     @Test fun theEmptyPillOpensThePicker() {
         compose.setContent { TellyscopeTheme(dynamic = false) { RemoteScreen(remoteState(apps = emptyList()), RemoteActions()) } }
-        compose.onNodeWithText(Copy.REMOTE_BUTTONS).performClick()
-        compose.onNodeWithText(Copy.buttonsHint(3)).assertExists()
+        compose.onNodeWithText(Copy.REMOTE_BUTTONS.text()).performClick()
+        compose.onNodeWithText(Copy.buttonsHint(3).text()).assertExists()
     }
 
     @Test fun remote_restarting() = shot("13_remote_restarting", screen = true) {
@@ -1359,7 +1360,7 @@ class ScreenshotTest {
     private val reportApp = AppFacts("0.8.0", "Pixel 8, Android 16")
 
     private fun reportUi(kind: ReportKind, details: String = "", log: String? = null) = runBlocking {
-        ReportUi(kind, reportApp, Reports.Connection.WIRELESS_DEBUGGING, tv = fake.facts(xgimi.ip), details = details, log = log)
+        ReportUi(kind, reportApp, Reports.Connection.WIRELESS_DEBUGGING, tv = fake.facts(xgimi.ip), details = details, log = log?.let(UiText::Raw))
     }
 
     /** Opens the form's dropdown that still says "Choose one" and picks [option]. */
@@ -1554,11 +1555,11 @@ class ScreenshotTest {
     @Test fun readme_tweaks() {
         val tweaks = TvTweaks(dnsHost = TvSettings.ADGUARD, animationScale = null)
         shot("29_readme_tweaks") { DeviceTabsScreen(deviceState { copy(tweaks = tweaks, apps = listOf(stockHome, playStore) + apps) }, DeviceActions(), startTab = TvTab.Tweaks) }
-        compose.onNodeWithText(Copy.GET_LAUNCHER_TEXT).assertExists()
+        compose.onNodeWithText(Copy.GET_LAUNCHER_TEXT.text()).assertExists()
     }
 
     private val stockHome = AppInfo(
-        "com.google.android.tvlauncher", "Google TV Home", 0xFF1A73E8, true, true, "this is your home screen", "1.0.4",
+        "com.google.android.tvlauncher", "Google TV Home", 0xFF1A73E8, true, true, UiText(R.string.data_protected_home_screen), "1.0.4",
         home = true, answersHome = true, builtInLauncher = true,
     )
     private val playStore = AppInfo("com.android.vending", "Google Play Store", 0xFF01875F, true, true, null, "40.1")
@@ -1566,7 +1567,7 @@ class ScreenshotTest {
 
     /** Projectivy, installed by the user, as a launcher: [home] it's on Home, the stock launcher off; else it offers to replace it. */
     private fun projectivy(a: AppInfo, home: Boolean) = a.copy(
-        protectedReason = "this is your home screen".takeIf { home }, system = false, removable = true, answersHome = true, homeService = true,
+        protectedReason = UiText(R.string.data_protected_home_screen).takeIf { home }, system = false, removable = true, answersHome = true, homeService = true,
         home = home, homeInstead = stockHome.packageName.takeUnless { home }, homeBack = stockHome.label.takeIf { home },
     )
 
@@ -1579,12 +1580,12 @@ class ScreenshotTest {
     // Make Home on Projectivy: the confirm says the TV's own launcher is the only one turned off.
     @Test fun readme_home() {
         shot("30_readme_home", screen = true) { DeviceTabsScreen(homeState(home = false, pending = "com.spocky.projengmenu" to Action.Home), DeviceActions(), startTab = TvTab.Tweaks) }
-        compose.onNodeWithText(Copy.makeHomeTitle("Projectivy Launcher")).assertExists()
+        compose.onNodeWithText(Copy.makeHomeTitle("Projectivy Launcher").text()).assertExists()
     }
 
     private fun homeCard(dark: Boolean) {
         shot("78_tweaks_home_card", dark) { DeviceTabsScreen(homeState(home = true), DeviceActions(), startTab = TvTab.Tweaks) }
-        compose.onNodeWithText(Copy.builtIn(off = true)).assertExists()
+        compose.onNodeWithText(Copy.builtIn(off = true).text()).assertExists()
     }
     @Test fun tweaks_homeCard() = homeCard(false)
     @Test fun tweaks_homeCard_dark() = homeCard(true)
@@ -1593,7 +1594,7 @@ class ScreenshotTest {
     @Test fun tweaks_homeCardNoDefault() {
         val state = homeState(home = false).let { s -> s.copy(device = s.device.copy(apps = s.device.apps.map { if (it.packageName == stockHome.packageName) it.copy(home = false) else it })) }
         shot("78_tweaks_home_card_no_default") { DeviceTabsScreen(state, DeviceActions(), startTab = TvTab.Tweaks) }
-        compose.onNodeWithText(Copy.NO_DEFAULT).assertExists()
+        compose.onNodeWithText(Copy.NO_DEFAULT.text()).assertExists()
     }
 
     // Back to Google TV Home from Projectivy: turned back on, and Projectivy's service goes off with Home.
@@ -1601,7 +1602,7 @@ class ScreenshotTest {
         shot("78_tweaks_home_back", dark, screen = true) {
             DeviceTabsScreen(homeState(home = true, pending = stockHome.packageName to Action.HomeBack), DeviceActions(), startTab = TvTab.Tweaks)
         }
-        compose.onNodeWithText(Copy.explainLeave("Google TV Home", off = true, "Projectivy Launcher", currentService = true, service = false)).assertExists()
+        compose.onNodeWithText(Copy.explainLeave("Google TV Home", off = true, "Projectivy Launcher", currentService = true, service = false).text()).assertExists()
     }
     @Test fun tweaks_homeBack() = homeBack(false)
     @Test fun tweaks_homeBack_dark() = homeBack(true)
@@ -1614,11 +1615,11 @@ class ScreenshotTest {
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("Projectivy Launcher"))
         compose.onNodeWithText("Projectivy Launcher").performClick()
         compose.mainClock.advanceTimeBy(1_000)
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(Copy.HOME_SETTINGS))
-        compose.onNodeWithText(Copy.HOME_SETTINGS).performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(Copy.HOME_SETTINGS.text()))
+        compose.onNodeWithText(Copy.HOME_SETTINGS.text()).performClick()
         compose.mainClock.advanceTimeBy(1_000)
         // The Tweaks tab, on the card.
-        compose.onNodeWithText(Copy.opensOnHome("Projectivy Launcher")).assertExists()
+        compose.onNodeWithText(Copy.opensOnHome("Projectivy Launcher").text()).assertExists()
     }
 
     // A keep from the TV's list only warns; a hard lock still offers nothing.
@@ -1647,10 +1648,10 @@ class ScreenshotTest {
         val state = deviceState {
             copy(apps = apps.map { if (it.packageName == "com.xgimi.assistant") it.copy(listKeep = true) else it }, pending = "com.xgimi.assistant" to Action.Disable)
         }
-        shot("79_apps_keep_warning", before = { compose.onNode(hasScrollAction()).performScrollToNode(hasText(Copy.confirm(Action.Disable))); Unit }) {
+        shot("79_apps_keep_warning", before = { compose.onNode(hasScrollAction()).performScrollToNode(hasText(Copy.confirm(Action.Disable).text())); Unit }) {
             DeviceTabsScreen(state, DeviceActions(), startTab = TvTab.Apps)
         }
-        compose.onNodeWithText(Copy.KEEP_WARNING, substring = true).assertExists()
+        compose.onNodeWithText(Copy.KEEP_WARNING.text(), substring = true).assertExists()
     }
 
     @Test fun readme_send() = shot("25_readme_send", screen = true) {

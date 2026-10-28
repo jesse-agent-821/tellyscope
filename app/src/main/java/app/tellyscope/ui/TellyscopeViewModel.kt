@@ -5,6 +5,7 @@ package app.tellyscope.ui
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.tellyscope.R
 import app.tellyscope.adb.AppFacts
 import app.tellyscope.adb.ConnectionRequest
 import app.tellyscope.adb.InstallKind
@@ -61,6 +62,8 @@ import app.tellyscope.data.Update
 import app.tellyscope.data.FoldBook
 import app.tellyscope.data.SeenBook
 import app.tellyscope.data.UpdateCheck
+import app.tellyscope.data.UiText
+import app.tellyscope.data.why
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -86,7 +89,7 @@ sealed interface RowState {
     data object Found : RowState
     data class Waiting(val since: Long) : RowState
     /** [error] is the plain sentence; [detail] is what the TV said, shown under Details. */
-    data class Code(val input: String = "", val busy: Boolean = false, val error: String? = null, val detail: String? = null) : RowState
+    data class Code(val input: String = "", val busy: Boolean = false, val error: UiText? = null, val detail: String? = null) : RowState
     data object NotAllowed : RowState
 }
 
@@ -151,7 +154,7 @@ data class DeviceUi(
 data class DebloatRun(
     val apps: List<ResetApp>,
     val at: Int = 0,
-    val failed: Map<String, String> = emptyMap(),
+    val failed: Map<String, UiText> = emptyMap(),
     val ran: Boolean = false,
 )
 
@@ -162,7 +165,7 @@ data class DebloatRun(
  */
 data class ResetUi(
     val plan: ResetPlan? = null,
-    val error: String? = null,
+    val error: UiText? = null,
     val running: ResetPlan? = null,
     val progress: ResetProgress? = null,
     val ran: Boolean = false,
@@ -196,7 +199,7 @@ data class FireInstall(
     val step: Step? = null,
     val release: LauncherRelease? = null,
     val progress: Progress? = null,
-    val error: String? = null,
+    val error: UiText? = null,
     val store: Boolean = false,
     val picked: Boolean = false,
     val until: Long? = null,
@@ -220,7 +223,7 @@ data class Removal(
     /** The TV said no to this phone (Cancel, or the prompt timed out): offer to ask again. */
     val refused: Boolean = false,
     /** Who is still there, for [Step.StillConnected]: "a connection from …", or a computer's name. */
-    val still: String? = null,
+    val still: UiText? = null,
     /** [still] is a connection left open, which only a restart ends; false when a computer was allowed again. */
     val open: Boolean = false,
 ) {
@@ -235,7 +238,7 @@ data class SideloadUi(
     /** Set only by the user's own tick on the downgrade warning. */
     val allowDowngrade: Boolean = false,
     val progress: Progress? = null,
-    val error: String? = null,
+    val error: UiText? = null,
     /** The TV's own words for a refusal, shown small under the explanation. */
     val detail: String? = null,
 ) {
@@ -259,7 +262,7 @@ data class ReportUi(
     /** What the entry point already knows, to start the user's details: the app that failed to install. */
     val details: String = "",
     /** This session's messages, then the TV's own words for a failed install. */
-    val log: String? = null,
+    val log: UiText? = null,
     /** Opened on GitHub with something cut: the screen offers to add it as a comment. */
     val posted: Report? = null,
 )
@@ -268,7 +271,7 @@ data class FilesUi(
     val folder: TvFolder = TvFolder.DOWNLOAD,
     /** Null while loading. */
     val list: List<TvFile>? = null,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 data class TransferUi(val name: String, val toTv: Boolean, val folder: TvFolder, val progress: Progress? = null)
@@ -375,7 +378,7 @@ fun outcome(access: TvAccess?): Removal = when {
     access?.connected == null || access.allowed == null -> Removal(Removal.Step.Unconfirmed)
     access.onlyThisPhone -> Removal(Removal.Step.Done)
     else -> access.others.firstOrNull()?.let { Removal(Removal.Step.StillConnected, still = Copy.connectionFrom(it.address), open = true) }
-        ?: Removal(Removal.Step.StillConnected, still = access.allowed.firstOrNull { !it.phone }?.let { it.name ?: Copy.UNNAMED_COMPUTER })
+        ?: Removal(Removal.Step.StillConnected, still = access.allowed.firstOrNull { !it.phone }?.let { it.name?.let(UiText::Raw) ?: Copy.UNNAMED_COMPUTER })
 }
 
 class TellyscopeViewModel(
@@ -407,11 +410,11 @@ class TellyscopeViewModel(
     val done: StateFlow<Done?> = _done.asStateFlow()
 
     /** One-shot snackbar lines: the TV refused, went away mid-action, or a restore or copy finished. */
-    private val _notice = MutableStateFlow<String?>(null)
-    val notice: StateFlow<String?> = _notice.asStateFlow()
+    private val _notice = MutableStateFlow<UiText?>(null)
+    val notice: StateFlow<UiText?> = _notice.asStateFlow()
 
     /** This session's messages, newest last, for a report's log. Kept in memory only. */
-    private val sessionLog = ArrayDeque<String>()
+    private val sessionLog = ArrayDeque<UiText>()
 
     /** Last stats per TV, so an offline page shows where it stood instead of blanks. Lives as long as the app. */
     private val lastSnapshot = mutableMapOf<String, Snapshot>()
@@ -623,17 +626,17 @@ class TellyscopeViewModel(
                 is ConnectResult.WrongCode -> setRow(hit.ip, row.copy(busy = false, error = Copy.WRONG_CODE, detail = r.message))
                 is ConnectResult.Unreachable -> setRow(hit.ip, row.copy(busy = false, error = Copy.UNREACHABLE, detail = r.message))
                 ConnectResult.NotAllowed -> setRow(hit.ip, row.copy(busy = false, error = Copy.PAIR_INSTEAD))
-                ConnectResult.NeedsPairing -> setRow(hit.ip, row.copy(busy = false, error = "The TV still wants a code. Check the number on screen and try again."))
+                ConnectResult.NeedsPairing -> setRow(hit.ip, row.copy(busy = false, error = UiText(R.string.vm_still_wants_code)))
             }
         }
     }
 
     /** "Add by IP": `ip` or `ip:port`. Returns an error line, or null when the connect started. */
-    fun addByIp(text: String): String? {
+    fun addByIp(text: String): UiText? {
         val m = Regex("""^(\d{1,3}(?:\.\d{1,3}){3})(?::(\d{1,5}))?$""").find(text.trim())
-            ?: return "That doesn't look like an IP address. It should look like four numbers with dots, like the one in your TV's network settings."
+            ?: return UiText(R.string.vm_not_an_ip)
         val port = m.groupValues[2].toIntOrNull() ?: 5555
-        if (port !in 1..65535) return "The port after the colon should be a number from 1 to 65535, like 5555."
+        if (port !in 1..65535) return UiText(R.string.vm_bad_port)
         val kind = if (port == 5555) app.tellyscope.data.ScanKind.Classic else app.tellyscope.data.ScanKind.Wireless
         val hit = ScanHit(m.groupValues[1], port, kind, null, null)
         _state.update { s ->
@@ -827,7 +830,7 @@ class TellyscopeViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _notice.value = e.message?.replaceFirstChar(Char::uppercase) ?: "That didn't work."
+                _notice.value = UiText.Capitalized(e.why(R.string.vm_didnt_work))
                 rereadAfterFailure(id)
                 return@launch
             }
@@ -1142,7 +1145,7 @@ class TellyscopeViewModel(
                 val history = source.history(id)
                 updateDevice(id) { it.copy(busy = null, history = history) }
                 undoing?.let(undoInFlight::remove) // a failed Undo can be tried again
-                _notice.value = e.message?.replaceFirstChar(Char::uppercase) ?: "That didn't work."
+                _notice.value = UiText.Capitalized(e.why(R.string.vm_didnt_work))
                 return@launch
             }
             val history = source.history(id)
@@ -1160,7 +1163,7 @@ class TellyscopeViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                e.message?.replaceFirstChar(Char::uppercase) ?: "That didn't work."
+                UiText.Capitalized(e.why(R.string.vm_didnt_work))
             }
             val history = source.history(id)
             updateDevice(id) { it.copy(busy = null, history = history) }
@@ -1213,7 +1216,7 @@ class TellyscopeViewModel(
                 undoing?.let(undoInFlight::remove) // a failed Undo can be tried again
                 // A reset's Undo can get partway, so History shows where it ended.
                 if (undoing != null) runCatching { source.history(id) }.getOrNull()?.let { h -> updateDevice(id) { it.copy(history = h) } }
-                _notice.value = e.message?.replaceFirstChar(Char::uppercase) ?: "That didn't work."
+                _notice.value = UiText.Capitalized(e.why(R.string.vm_didnt_work))
                 rereadAfterFailure(id)
                 return@launch
             }
@@ -1277,15 +1280,15 @@ class TellyscopeViewModel(
                     runCatching { source.apps(id) }.onSuccess { apps -> updateDevice(id) { it.copy(apps = apps) } }
                 }
                 is InstallResult.Refused -> updateDevice(id) {
-                    log("Install ${app.info.packageName} ${app.info.versionName.orEmpty()}: ${r.detail ?: r.reason}")
+                    log(UiText.Raw("Install ${app.info.packageName} ${app.info.versionName.orEmpty()}: ${r.detail ?: r.reason}"))
                     it.copy(sideload = ready.copy(step = SideloadUi.Step.Failed, error = Copy.installRefused(r.reason, app.label), detail = r.detail))
                 }
             }
         }
     }
 
-    private fun log(line: String) = synchronized(sessionLog) {
-        sessionLog.addLast(SimpleDateFormat("HH:mm:ss", Locale.ROOT).format(Date(clock())) + " " + line)
+    private fun log(line: UiText) = synchronized(sessionLog) {
+        sessionLog.addLast(UiText.Join(listOf(UiText.Raw(SimpleDateFormat("HH:mm:ss", Locale.ROOT).format(Date(clock()))), line), " "))
         while (sessionLog.size > LOG_LINES) sessionLog.removeFirst()
     }
 
@@ -1295,13 +1298,13 @@ class TellyscopeViewModel(
      */
     fun openReport(kind: ReportKind, details: String = "", said: String? = null) {
         val tv = _state.value.selected?.takeIf { it.state == DeviceState.Online }
-        val log = synchronized(sessionLog) { sessionLog.toList() } + listOfNotNull(said?.let { "The TV said: $it" })
+        val log = synchronized(sessionLog) { sessionLog.toList() } + listOfNotNull(said?.let { UiText(R.string.vm_report_tv_said, it) })
         val connection = when (tv?.hit?.kind) {
             ScanKind.Classic -> Reports.Connection.PORT_5555
             ScanKind.Wireless -> Reports.Connection.WIRELESS_DEBUGGING
             null -> Reports.Connection.COULD_NOT_CONNECT
         }
-        _state.update { it.copy(report = ReportUi(kind, appFacts, connection, reading = tv != null, details = details, log = log.joinToString("\n").ifEmpty { null })) }
+        _state.update { it.copy(report = ReportUi(kind, appFacts, connection, reading = tv != null, details = details, log = log.takeIf { it.isNotEmpty() }?.let { UiText.Join(it, "\n") })) }
         tv ?: return
         viewModelScope.launch {
             val facts = try { source.facts(tv.id) } catch (e: CancellationException) { throw e } catch (_: Exception) { null }
@@ -1455,11 +1458,11 @@ class TellyscopeViewModel(
         viewModelScope.launch {
             _notice.value = try {
                 val n = source.restoreAll(id).size
-                if (n == 0) "Nothing to turn back on." else "Turned $n ${if (n == 1) "app" else "apps"} back on."
+                if (n == 0) UiText(R.string.vm_nothing_to_turn_on) else UiText.plural(R.plurals.vm_turned_back_on, n)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                e.message?.replaceFirstChar(Char::uppercase) ?: "That didn't work."
+                UiText.Capitalized(e.why(R.string.vm_didnt_work))
             }
             val apps = runCatching { source.apps(id) }.getOrNull()
             val history = source.history(id)
@@ -1729,7 +1732,7 @@ class TellyscopeViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _notice.value = e.message?.replaceFirstChar(Char::uppercase) ?: "That didn't work."
+                _notice.value = UiText.Capitalized(e.why(R.string.vm_didnt_work))
                 return@launch
             }
             val now = source.listSource()
@@ -1798,7 +1801,7 @@ class TellyscopeViewModel(
                         throw e
                     } catch (e: Exception) {
                         // The TV refused this one or dropped; its row says why.
-                        e.message ?: "the TV refused"
+                        e.why(R.string.vm_tv_refused)
                     }
                     updateDevice(id) { d ->
                         d.copy(debloat = d.debloat?.let { r -> r.copy(at = r.at + 1, failed = if (why == null) r.failed else r.failed + (app.packageName to why)) })
@@ -1905,7 +1908,7 @@ class TellyscopeViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                ResetUi(error = e.message?.replaceFirstChar(Char::uppercase) ?: "The TV didn't answer.")
+                ResetUi(error = UiText.Capitalized(e.why(R.string.vm_tv_didnt_answer)))
             }
             updateDevice(id) { d -> d.copy(reset = d.reset?.let { ui }) }
         }
@@ -1931,7 +1934,7 @@ class TellyscopeViewModel(
                 throw e
             } catch (e: Exception) {
                 // The TV went away before any step could say: every step it was to run failed.
-                val why = e.message ?: "the TV didn't answer"
+                val why = e.why(R.string.vm_tv_didnt_answer_reason)
                 ui.entry to todo.turnOn.map { ResetFailure(ResetPart.TurnOn, it, why) } +
                     todo.bringBack.map { ResetFailure(ResetPart.BringBack, it, why) } +
                     listOfNotNull(todo.home?.let { ResetFailure(ResetPart.Home, null, why) })
@@ -1997,7 +2000,7 @@ class TellyscopeViewModel(
     }
 
     /** Types on the TV. Returns why it can't, or null once it's on its way. */
-    fun type(text: String): String? {
+    fun type(text: String): UiText? {
         if (!Remote.typeable(text)) return Copy.cantType(text)
         val id = _state.value.selectedId ?: return null
         viewModelScope.launch {

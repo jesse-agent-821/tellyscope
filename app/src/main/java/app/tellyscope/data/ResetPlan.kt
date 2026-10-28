@@ -2,6 +2,8 @@
 
 package app.tellyscope.data
 
+import app.tellyscope.R
+
 /** One app Reset TV changes, with the name it shows. */
 data class ResetApp(val packageName: String, val label: String)
 
@@ -34,7 +36,7 @@ enum class ResetPart { TurnOn, BringBack, Home }
 data class ResetProgress(val part: ResetPart, val done: Int, val of: Int)
 
 /** A step that didn't work: the [app] it was for (none for Home) and the TV's [reason]. */
-data class ResetFailure(val part: ResetPart, val app: ResetApp?, val reason: String)
+data class ResetFailure(val part: ResetPart, val app: ResetApp?, val reason: UiText)
 
 /** History's record of a reset: what Undo turns off, removes and switches back. */
 internal object ResetRecord {
@@ -44,7 +46,7 @@ internal object ResetRecord {
     const val TO = "to"
     const val SERVICE = "service"
 
-    fun label(changes: Int) = "Reset TV · $changes ${if (changes == 1) "change" else "changes"}"
+    fun label(changes: Int) = UiText.plural(R.plurals.data_history_reset, changes)
 
     fun list(previous: Map<String, String?>?, key: String) = previous?.get(key)?.split(',')?.filter { it.isNotEmpty() }.orEmpty()
 

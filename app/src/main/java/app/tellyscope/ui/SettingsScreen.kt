@@ -61,6 +61,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.tellyscope.data.RELEASES
 import app.tellyscope.data.sourceName
+import androidx.compose.ui.res.stringResource
+import app.tellyscope.R
+import app.tellyscope.data.UiText
+import app.tellyscope.data.resolve
 
 /** Where the lists come from, credited in Settings. Its star count is written in, not fetched. */
 internal const val CLEANYOURTV = "https://github.com/Gathin23/cleanyourtv"
@@ -69,11 +73,11 @@ internal const val CLEANYOURTV = "https://github.com/Gathin23/cleanyourtv"
 internal val OWN_LISTS_GUIDE = RELEASES.removeSuffix("/releases") + "/blob/main/CONTRIBUTING.md#using-your-own-lists"
 
 /** What Share Tellyscope sends: what it is, then the repo, whose page shows it and how to install. */
-internal val SHARE_TEXT = "I just found Tellyscope, an open-source app that cleans up your Android TV from your phone: turn off the bloat, install apps and send files, with no root and no PC. Free, no tracking. $REPO"
+internal val SHARE_TEXT = UiText(R.string.settings_share_text, REPO)
 
 /** Android's share sheet with [SHARE_TEXT], so any app the user picks can send it on. */
 internal fun shareTellyscope(context: Context) {
-    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, SHARE_TEXT)
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, SHARE_TEXT.resolve(context))
     runCatching { context.startActivity(Intent.createChooser(send, null)) }
 }
 
@@ -108,9 +112,9 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to the TV's page") }
+                    IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back_to_tv)) }
                 },
             )
         },
@@ -129,10 +133,9 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text("Check for updates", style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.settings_check_updates), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                (if (alphaBuild) "Every 5 minutes on alpha builds" else "Every 30 minutes") +
-                                    ", ask GitHub whether a newer Tellyscope is out. Nothing is downloaded.",
+                                stringResource(if (alphaBuild) R.string.settings_check_updates_alpha else R.string.settings_check_updates_release),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -147,8 +150,8 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text("Vibrate on key press", style = MaterialTheme.typography.titleSmall)
-                            Text("A short tick for each key on the Remote.", style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.settings_key_haptics), style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.settings_key_haptics_text), style = MaterialTheme.typography.bodyMedium)
                         }
                         Spacer(Modifier.width(16.dp))
                         Switch(checked = keyHaptics, onCheckedChange = null)
@@ -158,8 +161,8 @@ fun SettingsScreen(
                         Icon(BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Report a problem", style = MaterialTheme.typography.titleSmall)
-                            Text("Opens an issue on Tellyscope\u2019s GitHub. You see the text first.", style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.settings_report), style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.settings_report_text), style = MaterialTheme.typography.bodyMedium)
                         }
                         Spacer(Modifier.width(16.dp))
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -169,8 +172,8 @@ fun SettingsScreen(
                         Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(Copy.SHARE, style = MaterialTheme.typography.titleSmall)
-                            Text("Send someone the link to Tellyscope\u2019s GitHub page.", style = MaterialTheme.typography.bodyMedium)
+                            Text(Copy.SHARE.resolve(), style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.settings_share_hint), style = MaterialTheme.typography.bodyMedium)
                         }
                         Spacer(Modifier.width(16.dp))
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
@@ -184,7 +187,7 @@ fun SettingsScreen(
                         .padding(horizontal = 4.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Advanced", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.settings_advanced), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     Icon(if (advanced) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null)
                 }
             }
@@ -193,20 +196,20 @@ fun SettingsScreen(
                     ListsFrom(listSource, onOpen = { open(CLEANYOURTV) })
                     HorizontalDivider(color = MaterialTheme.colorScheme.surface)
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Change", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_change), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
-                            "Paste the HTTPS raw folder that holds index.json, e.g. raw.githubusercontent.com/<you>/tellyscope-devices/main/",
+                            stringResource(R.string.settings_change_text),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Row(Modifier.clickable { open(OWN_LISTS_GUIDE) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("How to use your own lists", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(R.string.settings_own_lists_guide), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(4.dp))
                             Icon(OpenInNew, contentDescription = null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.surface)
                     Row(Modifier.fillMaxWidth().clickable { editing = true }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Use your own debloat lists", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.settings_own_lists), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                     }
                 }
@@ -227,7 +230,7 @@ private fun ListsFrom(source: String?, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Lists from", style = MaterialTheme.typography.labelMedium, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.settings_lists_from), style = MaterialTheme.typography.labelMedium, color = c.onSurfaceVariant)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(if (source == null) "cleanyourtv" else sourceName(source), style = MaterialTheme.typography.titleMedium)
                 if (source == null) {
@@ -237,7 +240,7 @@ private fun ListsFrom(source: String?, onOpen: () -> Unit) {
                 }
             }
         }
-        if (source == null) Icon(OpenInNew, contentDescription = "Open cleanyourtv on GitHub", tint = c.onSurfaceVariant)
+        if (source == null) Icon(OpenInNew, contentDescription = stringResource(R.string.settings_open_cleanyourtv), tint = c.onSurfaceVariant)
     }
 }
 
@@ -254,12 +257,11 @@ private fun SourceDialog(source: String?, onSave: (String?) -> Unit, onDismiss: 
     var url by rememberSaveable { mutableStateOf(source.orEmpty()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Where the lists come from") },
+        title = { Text(stringResource(R.string.settings_source_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "To use your own lists, fork tellyscope-devices, edit it, and paste the address of the folder that holds index.json, " +
-                        "like https://raw.githubusercontent.com/you/tellyscope-devices/main/. Protected apps stay protected whatever a list says.",
+                    stringResource(R.string.settings_source_text),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 OutlinedTextField(url, { url = it }, placeholder = { Text("https://…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -267,13 +269,13 @@ private fun SourceDialog(source: String?, onSave: (String?) -> Unit, onDismiss: 
         },
         // Three actions stack full width; two sit side by side.
         confirmButton = {
-            val use = @Composable { m: Modifier -> Button(onClick = { onSave(url) }, enabled = url.isNotBlank(), modifier = m) { Text("Use these lists") } }
+            val use = @Composable { m: Modifier -> Button(onClick = { onSave(url) }, enabled = url.isNotBlank(), modifier = m) { Text(stringResource(R.string.settings_use_lists)) } }
             if (source == null) use(Modifier) else Column(Modifier.fillMaxWidth()) {
                 use(Modifier.fillMaxWidth())
-                TextButton(onClick = { onSave(null) }, Modifier.fillMaxWidth()) { Text("Reset to default") }
-                TextButton(onClick = onDismiss, Modifier.fillMaxWidth()) { Text("Cancel") }
+                TextButton(onClick = { onSave(null) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_reset)) }
+                TextButton(onClick = onDismiss, Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_cancel)) }
             }
         },
-        dismissButton = if (source == null) ({ TextButton(onClick = onDismiss) { Text("Cancel") } }) else null,
+        dismissButton = if (source == null) ({ TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } }) else null,
     )
 }

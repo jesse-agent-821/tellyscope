@@ -80,7 +80,7 @@ class TvAccessTest {
         val still = outcome(access(AdbClient(phone, 1), AdbClient(other, 2)))
         assertEquals(Removal.Step.StillConnected, still.step)
         assertEquals(Copy.connectionFrom(other), still.still)
-        assertEquals("alex@laptop", outcome(access(AdbClient(phone, 1), keys = listOf(phoneKey, laptop))).still)
+        assertEquals("alex@laptop", outcome(access(AdbClient(phone, 1), keys = listOf(phoneKey, laptop))).still?.text())
         assertEquals(Removal.Step.Unconfirmed, outcome(null).step)
         assertEquals(Removal.Step.Unconfirmed, outcome(access(AdbClient(phone, 1), keys = null)).step)
     }
