@@ -487,7 +487,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         val label = labels[packageName] ?: AppNames.fallback(packageName)
         val service = packageName.takeIf { it in serviceLaunchers }?.let { actions.homeService(it) }
             ?: throw IllegalStateException("$label has no accessibility service")
-        if (!actions.setService(service, true)) throw IllegalStateException(serviceNotOn(label))
+        if (!actions.grant(service)) throw IllegalStateException(serviceNotOn(label))
         // Undo of the switch to it turns it off again, as if the switch had turned it on.
         openSwitch(deviceId, packageName)?.let { book.amend(it, mapOf("service" to service)) }
         Unit
@@ -771,7 +771,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
             if (from == null || !actions.setHome(from)) {
                 homeLeft = true
                 errors += "the TV kept ${labelOf(to.substringBefore('/'))} as the home screen"
-            } else p[ResetRecord.SERVICE]?.let { if (!actions.setService(it, true)) errors += serviceNotOn(name) }
+            } else p[ResetRecord.SERVICE]?.let { if (!actions.grant(it)) errors += serviceNotOn(name) }
         }
         val ownHome = p[ResetRecord.TO]?.substringBefore('/')?.takeIf { homeLeft }
         suspend fun each(pkgs: List<String>, change: suspend (String) -> Unit) = pkgs.filter { pkg ->
@@ -1122,7 +1122,7 @@ internal suspend fun switchHome(
     is HomeResult.Switched -> {
         // Where the TV sends Home to its own launcher, the new one holds it with this service.
         val service = pkg.takeIf { withService && it in serviceLaunchers }?.let { actions.homeService(it) }?.takeUnless { actions.serviceOn(it) }
-        val on = service?.let { actions.setService(it, true) }
+        val on = service?.let { actions.grant(it) }
         val was = r.from?.substringBefore('/')?.takeIf { r.kept }
         val old = was?.takeIf { it in serviceLaunchers }?.let { actions.homeService(it) }?.takeIf { actions.serviceOn(it) }
         val off = old?.let { actions.setService(it, false) }
@@ -1150,13 +1150,21 @@ internal suspend fun switchHome(
 }
 
 /**
+ * Turns accessibility [service] on, only for a launcher in [ACCESSIBILITY_LAUNCHERS]. Every path that
+ * turns one on comes here, so neither a fetched list nor a saved record can name another; false
+ * for any other, as for a TV that refused.
+ */
+internal suspend fun Actions.grant(service: String): Boolean =
+    service.substringBefore('/') in ACCESSIBILITY_LAUNCHERS && setService(service, true)
+
+/**
  * The rest of [switch]'s Undo once its old launcher is on again: Home back to that launcher, the
  * service the switch turned on off, and the old one's back on. False when Home didn't go back.
  */
 internal suspend fun undoHomeSwitch(actions: Actions, switch: HistoryEntry): Boolean {
     val back = switch.previous?.get("from")?.let { actions.setHome(it) }
     switch.previous?.get("service")?.let { actions.setService(it, false) }
-    switch.previous?.get("fromService")?.let { actions.setService(it, true) }
+    switch.previous?.get("fromService")?.let { actions.grant(it) }
     return back != false
 }
 

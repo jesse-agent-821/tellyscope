@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.json.JSONObject
 
 /**
  * Launchers that keep Home with their own accessibility service, for TVs whose Home button opens
@@ -35,13 +34,13 @@ data class KnownLauncher(
 
 /** Empty unless it is schema 1; entries that can't be read or aren't package names are dropped. */
 fun parseLaunchers(text: String): List<KnownLauncher> = try {
-    val o = JSONObject(text)
+    val o = jsonObject(text)
     if (o.optInt("schema") != 1) emptyList() else o.getJSONArray("launchers").objectsOrSkip { l ->
         KnownLauncher(
             pkg = l.getString("package"),
-            name = l.getString("name"),
-            about = l.optStringOrNull("about"),
-        ).takeIf { PACKAGE.matches(it.pkg) }
+            name = plainText(l.getString("name"), NAME_MAX),
+            about = l.optStringOrNull("about")?.let { plainText(it, NOTE_MAX) }?.ifEmpty { null },
+        ).takeIf { PACKAGE.matches(it.pkg) && it.name.isNotEmpty() }
     }
 } catch (_: org.json.JSONException) {
     emptyList()
@@ -53,12 +52,12 @@ fun parseLaunchers(text: String): List<KnownLauncher> = try {
  * are dropped.
  */
 fun parseLabels(text: String): Map<String, String> = try {
-    val o = JSONObject(text)
+    val o = jsonObject(text)
     if (o.optInt("schema") != 1) emptyMap() else buildMap {
         o.getJSONArray("groups").objectsOrSkip { it.getJSONObject("labels") }.forEach { labels ->
             for (pkg in labels.keys()) {
                 if (pkg != "android" && !PACKAGE.matches(pkg)) continue
-                labels.optStringOrNull(pkg)?.let { put(pkg, it) }
+                labels.optStringOrNull(pkg)?.let { plainText(it, NAME_MAX) }?.ifEmpty { null }?.let { put(pkg, it) }
             }
         }
     }

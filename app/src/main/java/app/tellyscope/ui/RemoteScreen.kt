@@ -138,7 +138,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
-import android.graphics.BitmapFactory
+import app.tellyscope.data.Png
 import app.tellyscope.data.SharedLists
 import app.tellyscope.data.RemoteButtons
 import app.tellyscope.data.StreamingService
@@ -776,7 +776,7 @@ private fun ServicePill(s: StreamingService, modifier: Modifier = Modifier, inte
     val look = RemoteButtons.look(s, c.surfaceContainerLow.toArgb().toLong() and 0xFFFFFFFF, dark)
     // The name stands in until the logo is downloaded, or for good when it can't be.
     val logo = produceState<ImageBitmap?>(null, s.logo) {
-        value = SharedLists.logo(s.logo)?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }?.asImageBitmap()
+        value = SharedLists.logo(s.logo)?.let(Png::decode)?.asImageBitmap()
     }.value
     val fill = look.fill2?.let { Brush.linearGradient(listOf(Color(look.fill), Color(it))) } ?: SolidColor(Color(look.fill))
     Box(

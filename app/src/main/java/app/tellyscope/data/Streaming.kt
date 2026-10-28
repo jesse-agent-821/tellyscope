@@ -35,13 +35,13 @@ private fun JSONObject.colorOrNull(k: String): Long? =
  * name is dropped, and so are packages that aren't package names.
  */
 fun parseStreaming(text: String): List<StreamingService> = try {
-    val o = JSONObject(text)
+    val o = jsonObject(text)
     if (o.optInt("schema") != 1) emptyList() else o.getJSONArray("groups").objectsOrSkip { it }.flatMap { g ->
-        val group = g.getString("name")
+        val group = plainText(g.getString("name"), NAME_MAX)
         g.getJSONArray("services").objectsOrSkip { s ->
             val pkgs = s.optJSONArray("packages")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty().filter { PACKAGE.matches(it) }
             StreamingService(
-                name = s.getString("name"),
+                name = plainText(s.getString("name"), NAME_MAX),
                 packages = pkgs,
                 color = s.colorOrNull("color") ?: return@objectsOrSkip null,
                 color2 = s.colorOrNull("color2"),

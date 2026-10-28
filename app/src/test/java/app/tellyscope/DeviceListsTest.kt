@@ -262,7 +262,9 @@ class DeviceListsTest {
     }
 
     private val launchers = """{"schema": 1, "launchers": [{"package": "com.good.launcher", "name": "Good"}]}""".toByteArray()
-    private val logo = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte())
+    /** A PNG signature and an IHDR for 1 × 1, which is all [app.tellyscope.data.Png.ok] reads. */
+    private val logo = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 0x0D, 0x0A, 0x1A, 0x0A) +
+        byteArrayOf(0, 0, 0, 13) + "IHDR".toByteArray() + byteArrayOf(0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0)
 
     /** An index with only lists and logos; [bad] adds entries whose file is outside lists/ or logos/. */
     private fun sharedIndex(launchersSha: String = sha256(launchers), bad: Boolean = false) = """
