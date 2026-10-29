@@ -12,6 +12,8 @@ import app.tellyscope.data.Action
 import app.tellyscope.data.ActionFailed
 import app.tellyscope.data.HistoryBook
 import app.tellyscope.data.HistoryEntry
+import app.tellyscope.data.fireHomeBack
+import app.tellyscope.data.fireServiceHolder
 import app.tellyscope.data.fireServiceHome
 import app.tellyscope.data.firstHomeService
 import app.tellyscope.data.switchHome
@@ -224,5 +226,27 @@ class HomeSwitchTest {
         }
         assertTrue(tv.ran.toString(), tv.ran.isEmpty())
         assertTrue(book.entries("tv").isEmpty())
+    }
+
+    @Test fun onFireOsTheLauncherWhoseServiceIsOnHoldsHome() = runTest {
+        val tv = LauncherTv(home = TV_HOME)
+        assertNull(Actions(tv).fireServiceHolder(listOf(FLAUNCHER, PROJECTIVY)))
+        tv.services += PROJECTIVY_SERVICE
+        assertEquals(PROJECTIVY to PROJECTIVY_SERVICE, Actions(tv).fireServiceHolder(listOf(FLAUNCHER, PROJECTIVY)))
+    }
+
+    @Test fun onFireOsGoingBackTurnsTheServiceOffAndItsUndoOn() = runTest {
+        val tv = LauncherTv(home = TV_HOME).apply { services += PROJECTIVY_SERVICE }
+        val back = fireHomeBack(Actions(tv), PROJECTIVY to PROJECTIVY_SERVICE, { it }) { to, previous ->
+            book.record("tv", 0, Action.HomeBack, PROJECTIVY, to ?: "", Action.Home, previous = previous)
+        }
+        assertTrue(tv.services.isEmpty())
+        assertEquals(TV_HOME, back.label)
+        assertEquals(mapOf("service" to PROJECTIVY_SERVICE), back.previous)
+        // The default never moved: Home only opens the TV's own, which is on screen now.
+        assertEquals(TV_HOME, tv.home)
+        assertTrue(tv.ran.toString(), tv.ran.any { it.contains(tv.activities.getValue(TV_HOME)) && it.startsWith("am start") })
+        fire(tv)
+        assertEquals(listOf(PROJECTIVY_SERVICE), tv.services)
     }
 }

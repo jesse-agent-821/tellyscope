@@ -72,7 +72,7 @@ class AppNames(private val dir: File) {
             }
         }
         packages.associate { p ->
-            p.name to (cache[p.name]?.let { AppName(it.label, it.iconPng, it.tileColor, it.tileAccent) } ?: AppName(fallback(p.name), null))
+            p.name to (cache[p.name]?.let { AppName(named(p.name, it.label), it.iconPng, it.tileColor, it.tileAccent) } ?: AppName(fallback(p.name), null))
         }
     }
 
@@ -82,6 +82,13 @@ class AppNames(private val dir: File) {
          * "XGIMI Assistant", `com.google.android.youtube.tv` → "Youtube".
          */
         fun fallback(pkg: String): String = SharedLists.labels[pkg] ?: humanise(pkg)
+
+        /**
+         * [label], unless it's the package or one of its classes, which Android reports for an app
+         * with no label of its own (`com.amazon.firehomestarter.FireHomeStarterApplication`).
+         */
+        fun named(pkg: String, label: String): String =
+            if (label == pkg || label.startsWith("$pkg.")) fallback(pkg) else label
 
         /** What native daemons and system uids are listed as, in place of an app name. */
         const val SYSTEM = "Android system"

@@ -64,6 +64,12 @@ class AppNamesTest {
         assertEquals("Spotifytv", AppNames.fallback("com.spotify.spotifytv")) // maker already in the name
     }
 
+    @Test fun aClassNameInPlaceOfALabelIsHumanised() {
+        assertEquals("Amazon Firehomestarter", AppNames.named("com.amazon.firehomestarter", "com.amazon.firehomestarter.FireHomeStarterApplication"))
+        assertEquals("Example Weatherbox", AppNames.named("com.example.weatherbox", "com.example.weatherbox"))
+        assertEquals("Fire TV Home", AppNames.named("com.amazon.tv.launcher", "Fire TV Home"))
+    }
+
     @Test fun fallbackWhenTheHelperFails() = runBlocking {
         val helper = Helper(fail = true)
         val appNames = AppNames(tmp.root)

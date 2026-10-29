@@ -390,6 +390,8 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         // Same key as history: a placeholder serial must not give two boxes one cache.
         val names = appNames.names(key(deviceId), listed, LabelHelper(session, helperDex)::describe)
         val keep = keep[key(deviceId)].orEmpty()
+        // Fire OS keeps Amazon's launcher the default; a launcher whose service is on holds Home instead.
+        val held = if (fireOs(deviceId, FIRE_TV_LAUNCHER in system)) Actions(shell).fireServiceHolder(serviceLaunchers)?.first else null
         // On a launcher the user added, offer the way back to the one it replaced.
         val own = homeOptions?.let { builtIns(system, disabled, it) }.orEmpty()
         val back = homeOptions?.current?.takeIf { it !in system }
@@ -422,7 +424,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
                 version = "",
                 icon = name.icon,
                 removable = p.name in userInstalled,
-                home = p.name == homeOptions?.takeIf { it.default }?.current,
+                home = if (held != null) p.name == held else p.name == homeOptions?.takeIf { it.default }?.current,
                 listedLauncher = SharedLists.launchers.any { it.pkg == p.name },
                 homeInstead = homeOptions?.takeIf { p.name in it.others }?.current,
                 homeFirst = homeOptions?.takeIf { it.current == null && p.name in it.others } != null,
@@ -545,7 +547,7 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         fireHomes -= deviceId
         val key = key(deviceId)
         val actions = Actions(session(deviceId))
-        if (packageName in serviceLaunchers && (deviceKind(device(deviceId)) == DeviceKind.FireTv || actions.installed(FIRE_TV_LAUNCHER))) {
+        if (packageName in serviceLaunchers && fireOs(deviceId, actions.installed(FIRE_TV_LAUNCHER))) {
             return fireServiceHome(actions, packageName, withService, ::labelOf) { previous ->
                 book.record(key, System.currentTimeMillis(), Action.Home, packageName, labelOf(packageName), Action.Enable.takeIf { previous.isNotEmpty() }, undoing, previous)
             }
@@ -556,6 +558,9 @@ class AdbDeviceSource(context: Context) : DeviceSource {
     }
 
     private fun labelOf(pkg: String) = labels[pkg] ?: AppNames.fallback(pkg)
+
+    /** A Fire TV by its model, or any TV with Amazon's launcher: [amazonLauncher] says whether it has one. */
+    private fun fireOs(deviceId: String, amazonLauncher: Boolean) = amazonLauncher || deviceKind(device(deviceId)) == DeviceKind.FireTv
 
     /** Undo of a first home: [launcher] stays Home, as there's none to go back to; its [service] goes off. */
     private suspend fun firstHomeServiceOff(deviceId: String, launcher: String, service: String, undoing: Long): HistoryEntry {
@@ -593,6 +598,14 @@ class AdbDeviceSource(context: Context) : DeviceSource {
         val system = Parsers.packages(shell.shell("pm list packages -s").output).map { it.name }.toSet()
         val disabled = Parsers.packages(shell.shell("pm list packages -d").output).map { it.name }.toSet()
         val nothing = "there's no home screen to switch back to"
+        if (fireOs(deviceId, FIRE_TV_LAUNCHER in system)) Actions(shell).fireServiceHolder(serviceLaunchers)?.let { held ->
+            val (added, _) = held
+            // Reverses the Make Home that turned the service on, so Restore leaves it alone.
+            val home = undoing ?: book.entries(key).filter { it.action == Action.Home && it.undoneAt == null && it.firstHomeService != null && it.packageName == added }.maxByOrNull { it.id }?.id
+            return fireHomeBack(Actions(shell), held, ::labelOf) { to, previous ->
+                book.record(key, System.currentTimeMillis(), Action.HomeBack, added, to?.let(::labelOf) ?: labelOf(FIRE_TV_LAUNCHER), Action.Home, home, previous)
+            }
+        }
         val options = Actions(shell).homeOptions() ?: throw IllegalStateException(nothing)
         val added = options.current?.takeIf { it !in system } ?: throw IllegalStateException(nothing)
         val own = builtIns(system, disabled, options)
@@ -1178,6 +1191,38 @@ internal suspend fun fireServiceHome(
 }
 
 /**
+ * On Fire OS, the launcher of [launchers] whose accessibility service is on, and that service: it
+ * holds Home there while Amazon's launcher stays the default ([fireServiceHome]). Null when none is.
+ */
+internal suspend fun Actions.fireServiceHolder(launchers: Collection<String>): Pair<String, String>? {
+    for (pkg in launchers) {
+        val service = homeService(pkg) ?: continue
+        if (serviceOn(service)) return pkg to service
+    }
+    return null
+}
+
+/**
+ * Fire OS's way back to Amazon's launcher: [held]'s service, from [fireServiceHolder], goes off, so
+ * Home opens the default again, and the TV shows it. [record] gets the home activity and "service";
+ * its Undo, a Make Home, turns the service back on.
+ */
+internal suspend fun fireHomeBack(
+    actions: Actions,
+    held: Pair<String, String>,
+    label: (String) -> String,
+    record: (to: String?, previous: Map<String, String?>) -> HistoryEntry,
+): HistoryEntry {
+    val (pkg, service) = held
+    if (!actions.setService(service, false)) throw IllegalStateException(fireServiceNotOff(label(pkg)))
+    val to = actions.currentHome()
+    val left = to?.let { actions.handOff(pkg, it) }
+    return record(to?.substringBefore('/'), mapOf("service" to service)).also {
+        left?.let { throw ActionFailed(notShown(label(to!!.substringBefore('/')), it.reason), it.output) }
+    }
+}
+
+/**
  * Turns accessibility [service] on, only for a launcher in [ACCESSIBILITY_LAUNCHERS]. Every path that
  * turns one on comes here, so neither a fetched list nor a saved record can name another; false
  * for any other, as for a TV that refused.
@@ -1209,6 +1254,8 @@ private fun notShown(app: String, why: String) = "$app is Home now, but $why"
 private fun fireNeedsService(app: String) = "on Fire TV, Home can only open $app through its accessibility service, so nothing changed"
 
 private fun fireServiceNotOn(app: String) = "the TV didn't turn on $app's accessibility service, so nothing changed"
+
+private fun fireServiceNotOff(app: String) = "the TV didn't turn off $app's accessibility service, so nothing changed"
 
 private fun serviceNotOff(app: String) =
     "switched back, but $app's accessibility service is still on. Turn it off in the TV's Settings → Accessibility"

@@ -13,6 +13,9 @@ until this file has a section for its version.
 ## Unreleased
 
 - **Fixed:** On Fire TV, Remote buttons and Apps › Open now open the app. [#248](../../pull/248)
+- **Fixed:** On Fire TV, the Home screen card shows Projectivy as Current once it holds Home. [#249](../../pull/249)
+  - Switching back to Amazon's launcher turns Projectivy's accessibility service off.
+  - Apps without a name of their own no longer show a class name.
 
 ## 0.13.0 — 2026-10-29
 
