@@ -54,20 +54,45 @@ object Parsers {
         procUptime.trim().substringBefore(' ').toDoubleOrNull()?.toLong()
 
     /**
-     * Output of [Commands.THERMAL]: `type=millidegrees` lines. Prefers a CPU/SoC zone, otherwise
-     * the hottest plausible one. Null when nothing readable, so the UI shows a dash, never 0.
+     * Output of [Commands.THERMAL]: `type=millidegrees` lines, or `dumpsys thermalservice` where
+     * sysfs is shut. Prefers a CPU/SoC sensor, otherwise the hottest plausible one. Null when
+     * nothing readable, so the UI shows a dash, never 0.
      */
     fun temperatureC(thermal: String): Double? {
-        val zones = thermal.lineSequence().mapNotNull { line ->
+        val zones = thermalService(thermal) ?: thermal.lineSequence().mapNotNull { line ->
             val type = line.substringBefore('=', "").trim().lowercase()
             val raw = line.substringAfter('=', "").trim().toDoubleOrNull() ?: return@mapNotNull null
             val c = if (raw > 1000) raw / 1000 else raw // some kernels report whole degrees
-            if (c in 1.0..150.0) type to c else null
+            type to c
         }.toList()
-        if (zones.isEmpty()) return null
-        val cpu = zones.filter { (t, _) -> listOf("cpu", "soc", "tsens", "core").any { t.contains(it) } }
-        return (cpu.ifEmpty { zones }).maxOf { it.second }
+        val plausible = zones.filter { (_, c) -> c in 1.0..150.0 }
+        if (plausible.isEmpty()) return null
+        val cpu = plausible.filter { (t, _) -> listOf("cpu", "soc", "tsens", "core").any { t.contains(it) } }
+        return (cpu.ifEmpty { plausible }).maxOf { it.second }
     }
+
+    /**
+     * `Temperature{mValue=45.2, mType=0, mName=cpu0, mStatus=0}` lines from `dumpsys thermalservice`,
+     * in °C, as name to value; a CPU or SoC type is named so. Readings under "Current temperatures
+     * from HAL" win over the cached ones. Null when the output isn't the thermal service's.
+     */
+    private fun thermalService(dump: String): List<Pair<String, Double>>? {
+        if (!dump.contains("Temperature{")) return null
+        fun readings(text: String) = THERMAL_READING.findAll(text).mapNotNull { m ->
+            val (value, type, name) = m.destructured
+            val t = type.toInt()
+            if (t in BCL_TYPES) return@mapNotNull null // battery current/voltage limits, not temperatures
+            val label = if (t == TYPE_CPU || t == TYPE_SOC) "cpu" else name.lowercase()
+            label to (value.toDoubleOrNull() ?: return@mapNotNull null)
+        }.toList()
+        val current = dump.substringAfter("Current temperatures from HAL", "").substringBefore("Current cooling devices")
+        return readings(current).ifEmpty { readings(dump) }
+    }
+
+    private val THERMAL_READING = Regex("""Temperature\{mValue=([-\d.]+), mType=(-?\d+), mName=([^,}]*)""")
+    private const val TYPE_CPU = 0
+    private const val TYPE_SOC = 13
+    private val BCL_TYPES = 6..8
 
     data class Package(val name: String, val uid: Int?, val versionCode: Long? = null)
 

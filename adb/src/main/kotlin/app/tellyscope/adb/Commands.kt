@@ -7,8 +7,10 @@ package app.tellyscope.adb
 internal object Commands {
     const val SEP = "@@tellyscope@@"
 
+    /** Thermal zones from sysfs; where shell can't read a temp there (Fire OS 8), the thermal service's own readings. */
     const val THERMAL =
-        "for z in /sys/class/thermal/thermal_zone*; do echo \"$(cat \$z/type 2>/dev/null)=$(cat \$z/temp 2>/dev/null)\"; done"
+        "t=$(for z in /sys/class/thermal/thermal_zone*; do echo \"$(cat \$z/type 2>/dev/null)=$(cat \$z/temp 2>/dev/null)\"; done); " +
+            "case \"\$t\" in *=[0-9]*) echo \"\$t\" ;; *) dumpsys thermalservice ;; esac"
 
     /** Every 2 s: CPU counters, memory and the byte counters for network speed. */
     val FAST = listOf("cat /proc/stat", "cat /proc/meminfo", "cat /proc/net/dev").batch()

@@ -37,6 +37,40 @@ class ParsersTest {
         assertNull(Parsers.temperatureC("=\ncpu=\nx=-40000\n"))
     }
 
+    /** `dumpsys thermalservice` from a Fire TV Stick 4K Max (Fire OS 8), where sysfs temps read empty. */
+    @Test fun temperatureFallsBackToThermalService() {
+        val fireTv4kMax = """
+            |IsStatusOverride: false
+            |ThermalEventListeners:
+            |    callbacks: 1
+            |    killed: false
+            |    broadcasts count: -1
+            |ThermalStatusListeners:
+            |    callbacks: 1
+            |    killed: false
+            |    broadcasts count: -1
+            |Thermal Status: 0
+            |Cached temperatures:
+            |    Temperature{mValue=43.765, mType=0, mName=CPU, mStatus=0}
+            |    Temperature{mValue=31.474, mType=1, mName=GPU, mStatus=0}
+            |    Temperature{mValue=31.469, mType=3, mName=SKIN, mStatus=0}
+            |    Temperature{mValue=30.699, mType=2, mName=BATTERY, mStatus=0}
+            |HAL Ready: true
+            |HAL connection:
+            |    ThermalHAL 2.0 connected: yes
+            |Current temperatures from HAL:
+            |    Temperature{mValue=46.995, mType=0, mName=CPU, mStatus=0}
+            |    Temperature{mValue=33.18, mType=1, mName=GPU, mStatus=0}
+            |    Temperature{mValue=32.431, mType=2, mName=BATTERY, mStatus=0}
+            |    Temperature{mValue=33.137, mType=3, mName=SKIN, mStatus=0}
+            |Current cooling devices from HAL:
+            |    CoolingDevice{mValue=0, mType=2, mName=thermal-cpufreq-0}
+        """.trimMargin()
+        assertEquals(46.995, Parsers.temperatureC(fireTv4kMax))
+        val cachedOnly = fireTv4kMax.substringBefore("HAL Ready")
+        assertEquals(43.765, Parsers.temperatureC(cachedOnly))
+    }
+
     @Test fun packagesWithUid() {
         val out = "package:com.google.android.youtube.tv uid:10087\npackage:android uid:1000\npackage:com.shared uid:10050,10051\njunk\n"
         assertEquals(
