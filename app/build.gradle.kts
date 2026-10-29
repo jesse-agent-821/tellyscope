@@ -33,6 +33,12 @@ android {
         }
     }
 
+    // Only the languages Tellyscope is translated into: drops the ~80 other locales AndroidX and
+    // Material ship (about 440 KB). A new values-xx/strings.xml adds its code here too.
+    androidResources {
+        localeFilters += listOf("en", "hi")
+    }
+
     // Only CI signs, from repo secrets; without RELEASE_KEYSTORE the release APK is unsigned.
     val keystore = providers.environmentVariable("RELEASE_KEYSTORE").orNull
     signingConfigs {

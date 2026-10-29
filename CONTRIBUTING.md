@@ -57,6 +57,7 @@ python3 docs/screenshots/frame.py
 - Logic that doesn't need Android goes in `:adb`, with unit tests.
 - UI uses Material 3 Expressive components and the app theme. No hard-coded colors.
 - New UI text goes in `app/src/main/res/values/strings.xml`, never as a literal in Kotlin. Compose code reads it with `stringResource`; the ViewModel and data layer return a `UiText` the screen resolves. Counts use `<plurals>`, and values go in as format arguments, not by joining strings.
+- A translation is `app/src/main/res/values-xx/strings.xml` plus its code in `localeFilters` in `app/build.gradle.kts`; the release APK keeps only the languages listed there. `HindiStringsTest` shows how to check one covers every string and keeps its format arguments.
 
 ## Reporting a TV
 
