@@ -3,8 +3,8 @@
 What changed in each Tellyscope release, newest first. Each entry is written
 for the people using the app. Headings are `## <version> — <date>`, where
 `<version>` is the release's `versionName`. One line per change:
-**New:**, **Improved:** or **Fixed:**, then a plain line of at most about
-twelve words, ending with a link to its PR.
+**New:**, **Improved:** or **Fixed:**, in that order within a section, then a
+plain line of at most about twelve words, ending with a link to its PR.
 
 Changes merged into `dev` collect under `## Unreleased`. A release renames
 that heading to its version and date. A pull request into `main` fails CI
@@ -14,12 +14,15 @@ until this file has a section for its version.
 
 ## 0.13.0 — 2026-10-29
 
+- **New:** Remote buttons open Netflix, YouTube, Plex and 20 more streaming apps. [#224](../../pull/224)
+- **New:** On Fire TV, Install a home screen downloads and installs Projectivy for you. [#232](../../pull/232)
+  - It comes from Projectivy's GitHub releases, and is checked against its developer's signature first.
+- **New:** On Android TV, Projectivy can also be downloaded directly, after a warning. [#236](../../pull/236)
 - **Improved:** The Remote's dock is refined: it shows only the streaming buttons you pick. [#224](../../pull/224)
   - Hold a button, or use ⋮ › Remote buttons, to pick up to three (four on a tablet).
   - Docked apps that aren't one of these services no longer show on the Remote.
   - Screen off and Restart TV moved into ⋮ at the top of the Remote.
   - Only streaming apps on your TV are offered, and a button leaves when its app is uninstalled.
-- **New:** Remote buttons open Netflix, YouTube, Plex and 20 more streaming apps. [#224](../../pull/224)
 - **Improved:** The launcher and streaming app lists moved into tellyscope-devices, beside the Debloat device list. [#225](../../pull/225)
   - New services and launchers arrive without an app update, and your own list source can change them.
 - **Improved:** On the Remote, tap empty space to close the keyboard; keys leave it up. [#222](../../pull/222)
@@ -29,15 +32,12 @@ until this file has a section for its version.
   - A launcher already on the TV is marked Installed or Home now, with Make Home and Open in place of the Play Store.
   - Any other launcher on the TV is listed under On this TV.
   - Closing the Play Store without installing goes back to the picker.
-- **New:** On Fire TV, Install a home screen downloads and installs Projectivy for you. [#232](../../pull/232)
-  - It comes from Projectivy's GitHub releases, and is checked against its developer's signature first.
 - **Improved:** While you type on the Remote, back, home and menu shrink to give the D-pad room. [#229](../../pull/229)
 - **Improved:** Lists and logos are checked before use, so a bad list source is refused. [#226](../../pull/226)
 - **Improved:** Find your TV counts down to its next look every 10 seconds, and has a Rescan button. [#234](../../pull/234)
-- **Fixed:** On Fire TV, Make Home sets Projectivy as Home through its accessibility service. [#235](../../pull/235)
-- **New:** On Android TV, Projectivy can also be downloaded directly, after a warning. [#236](../../pull/236)
-- **Fixed:** On Fire TV, a debugging prompt hidden behind the remote alert shows on the phone. [#237](../../pull/237)
 - **Improved:** Switching TVs shows each TV's apps and debloat list straight away, while fresh ones load. [#242](../../pull/242)
+- **Fixed:** On Fire TV, Make Home sets Projectivy as Home through its accessibility service. [#235](../../pull/235)
+- **Fixed:** On Fire TV, a debugging prompt hidden behind the remote alert shows on the phone. [#237](../../pull/237)
 - **Fixed:** On Fire TV, Remote buttons and Apps › Open now open the app. [#248](../../pull/248)
 - **Fixed:** Apps without a name of their own no longer show a class name. [#249](../../pull/249)
 
@@ -67,8 +67,8 @@ until this file has a section for its version.
 
 ## 0.11.2 — 2026-10-28
 
-- **Fixed:** An unpaired TV on wireless debugging asks for the pairing code, not "didn't answer". [#200](../../pull/200)
 - **Improved:** The Share message now says what Tellyscope does, in a friendlier voice. [#197](../../pull/197)
+- **Fixed:** An unpaired TV on wireless debugging asks for the pairing code, not "didn't answer". [#200](../../pull/200)
 
 ## 0.11.1 — 2026-10-27
 
@@ -83,12 +83,12 @@ until this file has a section for its version.
   - History (every change, with Undo and Restore everything) moved here from Tweaks.
   - A dot on ⋮ tells you when there's a new change in History.
   - Advanced is renamed Advanced monitor.
-- **Fixed:** Undo in History turns off a new home screen's accessibility service, as promised. [#185](../../pull/185)
-- **Fixed:** Restore everything always ends on your TV's own home screen. [#184](../../pull/184)
-- **Fixed:** The Remote's backspace no longer closes the TV app once the box is empty. [#183](../../pull/183)
 - **Improved:** The Remote's dock moves to the bottom; Screen off and Restart go under ⋮. [#182](../../pull/182)
 - **Improved:** Debloat says when the list is all done, and what to try next. [#181](../../pull/181)
 - **Improved:** Every dialog uses one style, with the main action filled. [#180](../../pull/180)
+- **Fixed:** Undo in History turns off a new home screen's accessibility service, as promised. [#185](../../pull/185)
+- **Fixed:** Restore everything always ends on your TV's own home screen. [#184](../../pull/184)
+- **Fixed:** The Remote's backspace no longer closes the TV app once the box is empty. [#183](../../pull/183)
 
 ## 0.10.1 — 2026-10-27
 
@@ -112,15 +112,15 @@ until this file has a section for its version.
 ## 0.9.0 — 2026-10-26
 
 - **New:** A button on the Remote empties the TV's text box. [#144](../../pull/144)
-- **Improved:** The warning about another computer shows without scrolling. [#143](../../pull/143)
-- **Fixed:** Remove all other access waits for this phone to be allowed again. [#141](../../pull/141)
-- **Fixed:** The Remote no longer jumps while you type. [#141](../../pull/141)
 - **New:** Screen off turns off the TV's picture from the Remote; any key wakes it. [#139](../../pull/139)
-- **Fixed:** Apps show their real icon, not a banner strip or letter. [#136](../../pull/136)
-- **Improved:** The dock picker leaves out built-in phone-style apps like Camera. [#138](../../pull/138)
 - **New:** See who has ADB access to your TV, and remove it in one tap. [#137](../../pull/137)
 - **New:** Connected devices shows what's paired or plugged into the TV. [#137](../../pull/137)
+- **Improved:** The warning about another computer shows without scrolling. [#143](../../pull/143)
+- **Improved:** The dock picker leaves out built-in phone-style apps like Camera. [#138](../../pull/138)
 - **Improved:** About links to the website, GitHub and the demo video. [#137](../../pull/137)
+- **Fixed:** Remove all other access waits for this phone to be allowed again. [#141](../../pull/141)
+- **Fixed:** The Remote no longer jumps while you type. [#141](../../pull/141)
+- **Fixed:** Apps show their real icon, not a banner strip or letter. [#136](../../pull/136)
 
 ## 0.8.1 — 2026-10-25
 
@@ -148,18 +148,18 @@ until this file has a section for its version.
 
 ## 0.6.3 — 2026-10-25
 
-- **Fixed:** A slow stats read no longer drops the TV mid-change. [#101](../../pull/101)
-- **Improved:** Each screen reads only what it shows, at its own rate. [#101](../../pull/101)
 - **New:** An Other chip in the pairing guide, for TVs not listed. [#103](../../pull/103)
+- **Improved:** Each screen reads only what it shows, at its own rate. [#101](../../pull/101)
+- **Fixed:** A slow stats read no longer drops the TV mid-change. [#101](../../pull/101)
 
 ## 0.6.2 — 2026-10-25
 
+- **Improved:** The README names the scan's lookup of each TV's name. [#93](../../pull/93)
 - **Fixed:** App buttons and Undo wait while another change is running. [#92](../../pull/92)
 - **Fixed:** Turning off a launcher mid-switch no longer crashes the Apps tab. [#92](../../pull/92)
 - **Fixed:** A TV connecting mid-copy no longer hides the copy's dialog. [#93](../../pull/93)
 - **Fixed:** Undo can't run twice on the same change. [#93](../../pull/93)
 - **Fixed:** Fire TV and Philips Settings and the media storage service are protected. [#93](../../pull/93)
-- **Improved:** The README names the scan's lookup of each TV's name. [#93](../../pull/93)
 - **Fixed:** Debloat no longer crashes on a list that repeats an app. [#91](../../pull/91)
 - **Fixed:** One bad entry no longer hides every debloat list. [#91](../../pull/91)
 - **Fixed:** Sending a file never overwrites a hidden file on the TV. [#91](../../pull/91)
@@ -172,23 +172,23 @@ until this file has a section for its version.
 
 ## 0.6.0 — 2026-10-24
 
+- **New:** Switch home back to the TV's own launcher in one tap; list keeps only warn. [#76](../../pull/76)
 - **Improved:** The README now shows a real TV home screen after Tellyscope. [#79](../../pull/79)
 - **Improved:** Debloat finds your TV's list itself, or its maker's, or lets you pick. [#70](../../pull/70)
 - **Improved:** The TV tops every tab and folds into the bar as you scroll. [#71](../../pull/71)
 - **Improved:** Apps splits into Running, Installed and Built-in tabs, with the apps the TV needs folded under System. [#72](../../pull/72)
 - **Improved:** The TV's icon and name glide into the bar, Apps and Files pin their buttons, and empty pages say so. [#74](../../pull/74)
 - **Improved:** Protected apps drop the lock icon; the line saying why stays. [#74](../../pull/74)
-- **Fixed:** The upload icon draws properly again. [#74](../../pull/74)
-- **New:** Switch home back to the TV's own launcher in one tap; list keeps only warn. [#76](../../pull/76)
 - **Improved:** Search apps sits under the Apps buttons and opens to every matching app, full screen. [#78](../../pull/78)
 - **Improved:** The ⋮ menu names its TV and groups its items; Settings folds the list source under Advanced. [#78](../../pull/78)
-- **Fixed:** Welcome and pairing buttons no longer hide under the phone's navigation buttons. [#69](../../pull/69)
 - **Improved:** Messages at the bottom of the screen clear after 4 seconds, not 10. [#77](../../pull/77)
+- **Fixed:** The upload icon draws properly again. [#74](../../pull/74)
+- **Fixed:** Welcome and pairing buttons no longer hide under the phone's navigation buttons. [#69](../../pull/69)
 
 ## 0.5.0 — 2026-10-24
 
-- **Improved:** Add your TV step by step, with a screen per TV showing this phone's key. [#66](../../pull/66)
 - **New:** The app opens on its logo, then a one-time welcome for first-time users. [#65](../../pull/65)
+- **Improved:** Add your TV step by step, with a screen per TV showing this phone's key. [#66](../../pull/66)
 - **Improved:** Overview puts the TV first, with chips to switch and debloat counts. [#64](../../pull/64)
 - **Improved:** An offline TV keeps its maker and Android version after the app restarts. [#63](../../pull/63)
 
@@ -198,8 +198,8 @@ until this file has a section for its version.
 
 ## 0.3.0 — 2026-10-24
 
-- **Improved:** Picking your TV: your match on its own, or search by maker. [#49](../../pull/49)
 - **New:** Off Wi-Fi, the scan screen shows how to connect instead of an empty list. [#55](../../pull/55)
+- **Improved:** Picking your TV: your match on its own, or search by maker. [#49](../../pull/49)
 
 ## 0.2.2 — 2026-10-23
 
@@ -213,8 +213,6 @@ until this file has a section for its version.
 ## 0.2.0 — 2026-10-23
 
 - **New:** Uninstall apps you installed yourself; apps that came with the TV can only be disabled. [#33](../../pull/33)
-- **Improved:** Apps that can't be changed fold into their own section below the list. [#33](../../pull/33)
-- **Fixed:** App icons that failed to load once now come back, with a fallback to the banner. [#34](../../pull/34)
 - **New:** Block ads on the whole TV with Private DNS, AdGuard by default. [#35](../../pull/35)
 - **New:** Faster animations: menus move at twice the speed. [#35](../../pull/35)
 - **New:** Clear every app's cache in one tap; app data stays. [#35](../../pull/35)
@@ -223,6 +221,8 @@ until this file has a section for its version.
 - **New:** Set another launcher, like Projectivy, as default; Undo restores yours. [#37](../../pull/37)
 - **New:** Use your own fork of the debloat lists, set in Settings. [#40](../../pull/40)
 - **New:** Hear when a new version is out; turn it off in Settings. [#43](../../pull/43)
+- **Improved:** Apps that can't be changed fold into their own section below the list. [#33](../../pull/33)
+- **Fixed:** App icons that failed to load once now come back, with a fallback to the banner. [#34](../../pull/34)
 
 ## 0.1.0 — 2026-10-23
 
@@ -230,16 +230,16 @@ until this file has a section for its version.
 - **New:** Install apps on the TV from an APK, split APKs or a bundle. [#9](../../pull/9)
 - **New:** Send files to the TV's Download or Movies folder, and save them back. [#9](../../pull/9)
 - **New:** Suggested apps to disable, from a tested list for your TV. [#11](../../pull/11)
-- **Fixed:** Processes, screen state, connections and data used now show on real TVs. [#17](../../pull/17)
-- **Fixed:** A TV on Wi-Fi no longer shows its connection as Ethernet. [#17](../../pull/17)
 - **New:** An icon shows whether each device is a TV, projector, Fire TV or stick. [#18](../../pull/18)
+- **New:** Debloat in two steps: pick your TV, then review every app it turns off. [#23](../../pull/23)
 - **Improved:** The confirm before disabling suggested apps names every app. [#19](../../pull/19)
 - **Improved:** System updaters, Wi-Fi resources and Chrome's library are now protected. [#19](../../pull/19)
+- **Improved:** The TV page leads with the TV, its vitals and big action buttons. [#23](../../pull/23)
+- **Improved:** Undoing a Turn on in History asks before disabling the app. [#25](../../pull/25)
+- **Fixed:** Processes, screen state, connections and data used now show on real TVs. [#17](../../pull/17)
+- **Fixed:** A TV on Wi-Fi no longer shows its connection as Ethernet. [#17](../../pull/17)
 - **Fixed:** Done and error messages stay on screen long enough to read. [#20](../../pull/20)
 - **Fixed:** Undo and results always go to the TV the action ran on. [#20](../../pull/20)
-- **New:** Debloat in two steps: pick your TV, then review every app it turns off. [#23](../../pull/23)
-- **Improved:** The TV page leads with the TV, its vitals and big action buttons. [#23](../../pull/23)
 - **Fixed:** Adding a TV with a port above 65535 shows a message, not a crash. [#25](../../pull/25)
 - **Fixed:** Losing Wi-Fi while pairing shows a message, not a crash. [#25](../../pull/25)
 - **Fixed:** A broken suggestions list can no longer crash the app. [#25](../../pull/25)
-- **Improved:** Undoing a Turn on in History asks before disabling the app. [#25](../../pull/25)
