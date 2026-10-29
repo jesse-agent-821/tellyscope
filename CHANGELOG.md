@@ -12,6 +12,8 @@ until this file has a section for its version.
 
 ## Unreleased
 
+- **Fixed:** On Fire TV, Remote buttons and Apps › Open now open the app. [#248](../../pull/248)
+
 ## 0.13.0 — 2026-10-29
 
 - **Improved:** The Remote's dock is refined: it shows only the streaming buttons you pick. [#224](../../pull/224)

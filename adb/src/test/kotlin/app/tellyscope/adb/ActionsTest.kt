@@ -204,6 +204,12 @@ class ActionsTest {
         assertEquals(2, sh.ran.count { it.startsWith("monkey") })
     }
 
+    @Test fun openSkipsSystemKeysForAFireTvRemote() = runTest {
+        val sh = FakeShell()
+        Actions(sh).run(Action.OPEN, "com.foo")
+        assertTrue(sh.ran.single().contains("--pct-syskeys 0"))
+    }
+
     @Test fun openFallsBackToHomeForALauncherWithNoIcon() = runTest {
         val none = ok("** No activities found to run, monkey aborted.\n")
         val sh = FakeShell(mapOf(

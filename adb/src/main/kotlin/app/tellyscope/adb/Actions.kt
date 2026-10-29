@@ -291,14 +291,15 @@ class Actions(private val shell: AdbShell) {
 
     /**
      * TV apps register under LEANBACK_LAUNCHER only; phone-style apps under LAUNCHER. Try both, then
-     * HOME, for a launcher with no icon of its own.
+     * HOME, for a launcher with no icon of its own. `--pct-syskeys 0` because monkey aborts before
+     * launching on a TV whose remote has no keys it counts as system keys (Fire TV, exit -5).
      */
     private suspend fun open(pkg: String): ActionResult {
         require(PACKAGE.matches(pkg)) { "not a package name: $pkg" }
         var last = ""
         for (category in listOf("android.intent.category.LEANBACK_LAUNCHER", "android.intent.category.LAUNCHER", "android.intent.category.HOME")) {
             require(CATEGORY.matches(category)) { "not an intent category: $category" } // both go into the shell line
-            val r = shell.shell("monkey -p $pkg -c $category 1 2>&1")
+            val r = shell.shell("monkey -p $pkg -c $category --pct-syskeys 0 1 2>&1")
             if (r.exitCode == 0 && "No activities found" !in r.output && "aborted" !in r.output) {
                 return ActionResult.Done(undo = null)
             }
