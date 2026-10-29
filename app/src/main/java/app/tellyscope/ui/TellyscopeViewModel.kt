@@ -407,6 +407,9 @@ class TellyscopeViewModel(
 
     /** Last stats per TV, so an offline page shows where it stood instead of blanks. Lives as long as the app. */
     private val lastSnapshot = mutableMapOf<String, Snapshot>()
+    /** Each TV's app list and debloat list as last shown, so switching back shows them while fresh reads replace them. */
+    private val lastApps = mutableMapOf<String, List<AppInfo>>()
+    private val lastLists = mutableMapOf<String, Suggestions>()
 
     /** Keys go out one at a time, in the order pressed. */
     private val keys = Mutex()
@@ -647,10 +650,20 @@ class TellyscopeViewModel(
         launcherJob?.cancel()
         // A copy still running on this TV keeps its dialog, after a reconnect or a look at another TV.
         val transfer = id?.let(transfers::get)
+        _state.value.let { s ->
+            // A forgotten TV is no longer in the list, and keeps nothing.
+            val old = s.selectedId?.takeIf { old -> s.devices.any { it.id == old } } ?: return@let
+            if (s.device.apps.isNotEmpty()) lastApps[old] = s.device.apps
+            s.device.lists?.let { lastLists[old] = it }
+        }
+        // Only an online TV gets its old lists back: the offline card stays as it was.
+        val online = _state.value.devices.firstOrNull { it.id == id }?.state == DeviceState.Online
         // A removal survives the reconnect it causes; the TV coming back reselects it.
         _state.update {
             val removal = it.device.removal.takeIf { _ -> it.selectedId == id }
-            it.copy(selectedId = id, device = DeviceUi(snapshot = id?.let(lastSnapshot::get), transfer = transfer, removal = removal), query = "")
+            val apps = if (online) id?.let(lastApps::get).orEmpty() else emptyList()
+            val lists = if (online) id?.let(lastLists::get) else null
+            it.copy(selectedId = id, device = DeviceUi(snapshot = id?.let(lastSnapshot::get), apps = apps, lists = lists, transfer = transfer, removal = removal), query = "")
         }
         val device = _state.value.selected ?: return
         // History lives on the phone, so it shows (and undo is offered) even while the TV is off.
@@ -761,6 +774,8 @@ class TellyscopeViewModel(
     fun forget(id: String) {
         viewModelScope.launch {
             source.forget(id)
+            lastApps.remove(id)
+            lastLists.remove(id)
             val known = source.known()
             val lists = runCatching { source.listSource() }.getOrNull()
             _state.update { it.copy(devices = known, listSource = lists) }
@@ -1656,6 +1671,8 @@ class TellyscopeViewModel(
                 return@launch
             }
             val now = source.listSource()
+            // Every TV's list came from the old source.
+            lastLists.clear()
             _state.update { it.copy(listSource = now, device = it.device.copy(lists = null)) }
             _notice.value = Copy.listSource(now)
             if (id != null) loadLists(id) { shownApps(id) }
