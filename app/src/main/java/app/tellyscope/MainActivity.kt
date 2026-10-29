@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -196,6 +197,7 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     val browser = LocalUriHandler.current
     val context = LocalContext.current
+    val res = LocalResources.current
     val snackbar = remember { SnackbarHostState() }
     var adding by rememberSaveable { mutableStateOf(false) }
     var remote by rememberSaveable { mutableStateOf(false) }
@@ -401,7 +403,7 @@ fun TellyscopeApp(vm: TellyscopeViewModel) {
                 closeSideload = vm::closeSideload,
                 reportInstall = { s ->
                     vm.closeSideload()
-                    vm.openReport(ReportKind.Problem, s.app?.let { context.getString(R.string.vm_report_tried_install, it.label, it.info.versionName.orEmpty()).trim() }.orEmpty(), s.detail)
+                    vm.openReport(ReportKind.Problem, s.app?.let { res.getString(R.string.vm_report_tried_install, it.label, it.info.versionName.orEmpty()).trim() }.orEmpty(), s.detail)
                 },
                 openInstalled = vm::openInstalled,
                 folder = vm::folder,

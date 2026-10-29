@@ -5,6 +5,7 @@ package app.tellyscope
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -51,7 +52,10 @@ class HindiStringsTest {
             val english = Strings.plurals[f.name] ?: continue
             for ((quantity, n) in listOf("one" to 1, "other" to 2)) {
                 val en = english[quantity] ?: english.getValue("other")
-                assertEquals("${f.name} $quantity", args(en), args(res.getQuantityText(f.getInt(null), n).toString()))
+                val hi = args(res.getQuantityText(f.getInt(null), n).toString())
+                // Hindi "one" also covers 0, so it may carry the count where English "one" spells it out.
+                val allowed = if (quantity == "one") setOf(args(en), args(english.getValue("other"))) else setOf(args(en))
+                assertTrue("${f.name} $quantity: $hi", hi in allowed)
             }
         }
     }

@@ -411,7 +411,7 @@
     <string name="copy_reset_done_home">%1$s होम स्क्रीन है। ऐप का डेटा और साइन-इन बने रहे।</string>
     <string name="copy_reset_done_nothing">. ऐप का डेटा और साइन-इन बने रहे।</string>
     <plurals name="copy_reset_partly_text">
-        <item quantity="one">एक चरण काम नहीं किया। बाकी सब फ़ैक्ट्री वाली स्थिति में वापस आ गया है। कुछ भी नहीं खोया।</item>
+        <item quantity="one">%1$d चरण काम नहीं किया। बाकी सब फ़ैक्ट्री वाली स्थिति में वापस आ गया है। कुछ भी नहीं खोया।</item>
         <item quantity="other">%1$d चरण काम नहीं किए। बाकी सब फ़ैक्ट्री वाली स्थिति में वापस आ गया है। कुछ भी नहीं खोया।</item>
     </plurals>
     <plurals name="copy_turned_on_all">
@@ -642,7 +642,7 @@
     <string name="tabs_clear_search">खोज मिटाएं</string>
     <string name="tabs_suggested_none">%1$s सूची का कोई भी ऐप इस TV पर नहीं है</string>
     <plurals name="tabs_suggested_all_off">
-        <item quantity="one">सुझाया गया ऐप बंद है</item>
+        <item quantity="one">%1$d सुझाया गया ऐप बंद है</item>
         <item quantity="other">सुझाए गए सभी %1$d ऐप बंद हैं</item>
     </plurals>
     <plurals name="tabs_suggested_some_off">
