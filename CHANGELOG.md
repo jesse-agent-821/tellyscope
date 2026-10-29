@@ -12,22 +12,17 @@ until this file has a section for its version.
 
 ## Unreleased
 
-- **Fixed:** On Fire TV, Remote buttons and Apps › Open now open the app. [#248](../../pull/248)
-- **Fixed:** On Fire TV, the Home screen card shows Projectivy as Current once it holds Home. [#249](../../pull/249)
-  - Switching back to Amazon's launcher turns Projectivy's accessibility service off.
-  - Apps without a name of their own no longer show a class name.
-- **Fixed:** On the Remote, a tap on empty space closes the keyboard; keys leave it up. [#250](../../pull/250)
-
 ## 0.13.0 — 2026-10-29
 
 - **Improved:** The Remote's dock is refined: it shows only the streaming buttons you pick. [#224](../../pull/224)
   - Hold a button, or use ⋮ › Remote buttons, to pick up to three (four on a tablet).
   - Docked apps that aren't one of these services no longer show on the Remote.
   - Screen off and Restart TV moved into ⋮ at the top of the Remote.
+  - Only streaming apps on your TV are offered, and a button leaves when its app is uninstalled.
 - **New:** Remote buttons open Netflix, YouTube, Plex and 20 more streaming apps. [#224](../../pull/224)
 - **Improved:** The launcher and streaming app lists moved into tellyscope-devices, beside the Debloat device list. [#225](../../pull/225)
   - New services and launchers arrive without an app update, and your own list source can change them.
-- **Improved:** On the Remote, tap outside the text box to close the keyboard. [#222](../../pull/222)
+- **Improved:** On the Remote, tap empty space to close the keyboard; keys leave it up. [#222](../../pull/222)
 - **Improved:** Debloat ticks a whole group of apps in one tap, from its heading. [#219](../../pull/219)
   - Debloat no longer lists the TV's own home app, so it can't be turned off there.
 - **Improved:** Install a home screen offers Projectivy and FLauncher, and says how to use any other launcher. [#223](../../pull/223)
@@ -37,17 +32,14 @@ until this file has a section for its version.
 - **New:** On Fire TV, Install a home screen downloads and installs Projectivy for you. [#232](../../pull/232)
   - It comes from Projectivy's GitHub releases, and is checked against its developer's signature first.
 - **Improved:** While you type on the Remote, back, home and menu shrink to give the D-pad room. [#229](../../pull/229)
-- **Fixed:** A Remote button's tap ripple stays inside the button. [#228](../../pull/228)
-- **Improved:** The Remote buttons list has more room at its sides. [#228](../../pull/228)
 - **Improved:** Lists and logos are checked before use, so a bad list source is refused. [#226](../../pull/226)
 - **Improved:** Find your TV counts down to its next look every 10 seconds, and has a Rescan button. [#234](../../pull/234)
 - **Fixed:** On Fire TV, Make Home sets Projectivy as Home through its accessibility service. [#235](../../pull/235)
-- **Fixed:** The Projectivy install dialog on Fire TV closes when the install finishes. [#235](../../pull/235)
 - **New:** On Android TV, Projectivy can also be downloaded directly, after a warning. [#236](../../pull/236)
 - **Fixed:** On Fire TV, a debugging prompt hidden behind the remote alert shows on the phone. [#237](../../pull/237)
-- **Improved:** Remote buttons offer only the streaming apps on your TV, and a button leaves when its app is uninstalled. [#239](../../pull/239)
-- **Fixed:** The app no longer closes when you open or switch to a TV. [#241](../../pull/241)
 - **Improved:** Switching TVs shows each TV's apps and debloat list straight away, while fresh ones load. [#242](../../pull/242)
+- **Fixed:** On Fire TV, Remote buttons and Apps › Open now open the app. [#248](../../pull/248)
+- **Fixed:** Apps without a name of their own no longer show a class name. [#249](../../pull/249)
 
 ## 0.12.0 — 2026-10-28
 
