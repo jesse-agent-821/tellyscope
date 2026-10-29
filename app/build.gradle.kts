@@ -37,6 +37,8 @@ android {
     // Material ship (about 440 KB). A new values-xx/strings.xml adds its code here too.
     androidResources {
         localeFilters += listOf("en", "hi")
+        // Lists them for Android 13+'s per-app language setting (default locale: res/resources.properties).
+        generateLocaleConfig = true
     }
 
     // Only CI signs, from repo secrets; without RELEASE_KEYSTORE the release APK is unsigned.
