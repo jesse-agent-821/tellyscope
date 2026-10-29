@@ -12,9 +12,6 @@ until this file has a section for its version.
 
 ## Unreleased
 
-- **Fixed:** The app no longer closes when you open or switch to a TV. [#241](../../pull/241)
-- **Improved:** Switching TVs shows each TV's apps and debloat list straight away, while fresh ones load. [#240](../../pull/240)
-
 ## 0.13.0 — 2026-10-29
 
 - **Improved:** The Remote's dock is refined: it shows only the streaming buttons you pick. [#224](../../pull/224)
@@ -43,6 +40,8 @@ until this file has a section for its version.
 - **New:** On Android TV, Projectivy can also be downloaded directly, after a warning. [#236](../../pull/236)
 - **Fixed:** On Fire TV, a debugging prompt hidden behind the remote alert shows on the phone. [#237](../../pull/237)
 - **Improved:** Remote buttons offer only the streaming apps on your TV, and a button leaves when its app is uninstalled. [#239](../../pull/239)
+- **Fixed:** The app no longer closes when you open or switch to a TV. [#241](../../pull/241)
+- **Improved:** Switching TVs shows each TV's apps and debloat list straight away, while fresh ones load. [#242](../../pull/242)
 
 ## 0.12.0 — 2026-10-28
 
