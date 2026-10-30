@@ -44,9 +44,11 @@ data class TvAccess(
          * [known]: the keys this TV was seen to allow before, null on the first read, when every key
          * counts as known. A key that isn't is [AccessKey.new].
          *
-         * When the allowed keys are read and none is another computer's, only this phone and a
-         * [AccessClient.Who.Waiting] connection are listed: nothing else can be in, and the TV
-         * doesn't say whether the rest were refused or are still asking.
+         * Leftover connections: when the TV's allowed list can be read and holds only this phone's
+         * key, only this phone and a [AccessClient.Who.Waiting] connection are listed. Any other open
+         * connection was never saved as allowed. It's left over from a Deny, a closed prompt or a
+         * revoke, and the TV doesn't say which, so it is left out. One gap: a computer let in without
+         * "Always allow" isn't saved either, so it is left out too.
          */
         fun of(
             clients: List<AdbClient>?,
