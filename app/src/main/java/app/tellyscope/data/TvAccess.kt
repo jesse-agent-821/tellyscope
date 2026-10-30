@@ -43,6 +43,10 @@ data class TvAccess(
          *
          * [known]: the keys this TV was seen to allow before, null on the first read, when every key
          * counts as known. A key that isn't is [AccessKey.new].
+         *
+         * When the allowed keys are read and none is another computer's, only this phone and a
+         * [AccessClient.Who.Waiting] connection are listed: nothing else can be in, and the TV
+         * doesn't say whether the rest were refused or are still asking.
          */
         fun of(
             clients: List<AdbClient>?,
@@ -75,7 +79,9 @@ data class TvAccess(
                 val phone = k.fingerprint == phoneFingerprint
                 AccessKey(k.fingerprint, k.name, k.lastSeen, phone, new = !phone && known != null && k.fingerprint !in known)
             }?.sortedWith(compareByDescending<AccessKey> { it.phone }.thenByDescending { it.new })
-            return TvAccess(connected, allowed)
+            val nobodyElse = allowed?.none { !it.phone } == true
+            val listed = if (nobodyElse) connected?.filter { it.who == AccessClient.Who.Phone || it.who == AccessClient.Who.Waiting } else connected
+            return TvAccess(listed, allowed)
         }
     }
 }

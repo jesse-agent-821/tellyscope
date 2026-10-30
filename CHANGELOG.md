@@ -15,6 +15,7 @@ until this file has a section for its version.
 - **Improved:** Remote volume moves the full range in about 15 taps, without lag. [#267](../../pull/267)
 - **Fixed:** On Fire TV, making Projectivy Home now opens it straight away, without a Home press. [#263](../../pull/263)
 - **Fixed:** On Fire TV, Reset TV now puts Amazon's launcher back when Projectivy holds Home, by turning its accessibility service off. Undo turns it back on. [#263](../../pull/263)
+- **Fixed:** Who has access hides leftover connections when only this phone is allowed. [#269](../../pull/269)
 
 ## 0.13.0 — 2026-10-29
 
