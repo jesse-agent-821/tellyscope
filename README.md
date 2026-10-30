@@ -47,7 +47,7 @@ Debloat your Android TV, install apps, and browse and transfer files on it, all 
 
 ## What it does
 
-Tellyscope talks to your Android TV, Google TV, NVIDIA Shield or Fire TV over Wi-Fi using ADB, the debugging protocol developers use. Tested on Fire TV (Fire OS 8); a few remote keys and the temperature reading don't work there yet. NVIDIA Shield hasn't been tested on real hardware yet.
+Tellyscope talks to your Android TV, Google TV, NVIDIA Shield or Fire TV over Wi-Fi using ADB, the debugging protocol developers use. Tested on Fire TV (Fire OS 8); a few remote keys don't work there yet. NVIDIA Shield hasn't been tested on real hardware yet.
 
 - **Connect.** Finds TVs on your Wi-Fi, looking again every 10 seconds or when you tap **Rescan**, or add one by IP. Works with network debugging and with Android 11+ wireless debugging and its pairing code. TVs reconnect by themselves.
 - **See how it's doing.** Free space, CPU, RAM, temperature and network speed, plus what's paired or plugged in. **Advanced monitor** has CPU and RAM by app, processes, network and data used.
