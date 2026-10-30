@@ -12,6 +12,8 @@ until this file has a section for its version.
 
 ## Unreleased
 
+- **New:** Spanish, Chinese, Portuguese, French, German, Japanese and Russian translations, machine-made; corrections welcome. [#272](../../pull/272)
+
 ## 0.14.0 — 2026-10-30
 
 - **New:** Tellyscope speaks Hindi when the phone is set to Hindi. It's a first, machine-made translation; corrections are welcome. [#231](../../pull/231)

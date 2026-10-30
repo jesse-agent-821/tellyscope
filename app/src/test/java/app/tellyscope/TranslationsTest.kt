@@ -13,10 +13,12 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.w3c.dom.Element
 
-/** `values-hi` translates every string and plural, and keeps each one's format arguments. */
+/**
+ * Each `values-xx` translates every string and plural, and keeps each one's format arguments.
+ * A new translation adds a subclass below with its qualifier.
+ */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], qualifiers = "hi")
-class HindiStringsTest {
+abstract class TranslationsTest(private val qualifier: String) {
     private val res = RuntimeEnvironment.getApplication().resources
     private val arg = Regex("""%(\d+\$)?[-#+ 0,(]*\d*(\.\d+)?[a-zA-Z%]""")
 
@@ -35,7 +37,7 @@ class HindiStringsTest {
             assertEquals(
                 tag,
                 names("src/main/res/values/strings.xml", tag, skipUntranslatable = true),
-                names("src/main/res/values-hi/strings.xml", tag),
+                names("src/main/res/values-$qualifier/strings.xml", tag),
             )
         }
     }
@@ -50,13 +52,22 @@ class HindiStringsTest {
     @Test fun everyPluralKeepsItsArguments() {
         for (f in R.plurals::class.java.fields) {
             val english = Strings.plurals[f.name] ?: continue
-            for ((quantity, n) in listOf("one" to 1, "other" to 2)) {
-                val en = english[quantity] ?: english.getValue("other")
-                val hi = args(res.getQuantityText(f.getInt(null), n).toString())
-                // Hindi "one" also covers 0, so it may carry the count where English "one" spells it out.
-                val allowed = if (quantity == "one") setOf(args(en), args(english.getValue("other"))) else setOf(args(en))
-                assertTrue("${f.name} $quantity: $hi", hi in allowed)
+            // Languages split counts differently (Hindi and French "one" also cover 0, Russian "one"
+            // covers 21), so any form may carry the count where English "one" spells it out.
+            val allowed = setOf(args(english["one"] ?: english.getValue("other")), args(english.getValue("other")))
+            for (n in listOf(0, 1, 2, 3, 5, 11, 21, 1_000_000)) {
+                val translated = args(res.getQuantityText(f.getInt(null), n).toString())
+                assertTrue("${f.name} $n: $translated", translated in allowed)
             }
         }
     }
 }
+
+@Config(sdk = [35], qualifiers = "hi") class HindiStringsTest : TranslationsTest("hi")
+@Config(sdk = [35], qualifiers = "es") class SpanishStringsTest : TranslationsTest("es")
+@Config(sdk = [35], qualifiers = "zh-rCN") class ChineseStringsTest : TranslationsTest("zh-rCN")
+@Config(sdk = [35], qualifiers = "pt-rBR") class PortugueseStringsTest : TranslationsTest("pt-rBR")
+@Config(sdk = [35], qualifiers = "fr") class FrenchStringsTest : TranslationsTest("fr")
+@Config(sdk = [35], qualifiers = "de") class GermanStringsTest : TranslationsTest("de")
+@Config(sdk = [35], qualifiers = "ja") class JapaneseStringsTest : TranslationsTest("ja")
+@Config(sdk = [35], qualifiers = "ru") class RussianStringsTest : TranslationsTest("ru")
