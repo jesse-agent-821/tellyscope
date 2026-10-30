@@ -315,7 +315,6 @@
     <!-- %1$s is the app that uses the most memory -->
     <string name="copy_health_memory_full_one">Memory almost full: %1$s use the most</string>
     <string name="copy_health_memory_full_two">Memory almost full: %1$s and %2$s use the most</string>
-    <string name="copy_health_hot">Running hot</string>
     <string name="copy_health_fine">Running fine</string>
 
     <!-- TV folders -->
@@ -949,7 +948,6 @@
     <string name="advanced_cpu">CPU</string>
     <string name="advanced_ram">RAM</string>
     <string name="advanced_app">App</string>
-    <string name="advanced_temperature">Temperature</string>
     <!-- How long the TV has been on, like "2d 4h" -->
     <string name="advanced_on_for">On for</string>
     <string name="advanced_screen">Screen</string>
@@ -958,7 +956,6 @@
     <string name="advanced_percent">%1$d%%</string>
     <string name="advanced_percent_whole">%1$.0f%%</string>
     <string name="advanced_percent_tenths">%1$.1f%%</string>
-    <string name="advanced_celsius">%1$d°C</string>
     <!-- %1$s is how long ago, like "5 minutes ago" -->
     <string name="advanced_as_of">As of %1$s</string>
     <string name="advanced_memory">Memory</string>
@@ -1033,11 +1030,8 @@
     <string name="device_gb_used">%1$s used</string>
     <string name="device_cpu">CPU</string>
     <string name="device_ram">RAM</string>
-    <!-- Short for temperature -->
-    <string name="device_temp">Temp</string>
     <string name="device_network">Network</string>
     <string name="device_percent">%1$d%%</string>
-    <string name="device_celsius">%1$d°C</string>
     <!-- %1$s is an app name -->
     <string name="device_disable_title">Disable %1$s?</string>
     <string name="device_cancel">Cancel</string>

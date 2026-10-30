@@ -248,7 +248,6 @@
     <string name="copy_health_memory_full">मेमोरी लगभग भर गई है</string>
     <string name="copy_health_memory_full_one">मेमोरी लगभग भर गई है: सबसे ज़्यादा %1$s इस्तेमाल करता है</string>
     <string name="copy_health_memory_full_two">मेमोरी लगभग भर गई है: सबसे ज़्यादा %1$s और %2$s इस्तेमाल करते हैं</string>
-    <string name="copy_health_hot">गर्म चल रहा है</string>
     <string name="copy_health_fine">ठीक चल रहा है</string>
     <string name="copy_folder_download">डाउनलोड</string>
     <string name="copy_folder_movies">फ़िल्में</string>
@@ -764,7 +763,6 @@
     <string name="advanced_cpu">CPU</string>
     <string name="advanced_ram">RAM</string>
     <string name="advanced_app">ऐप</string>
-    <string name="advanced_temperature">तापमान</string>
     <string name="advanced_on_for">कितनी देर से चालू</string>
     <string name="advanced_screen">स्क्रीन</string>
     <string name="advanced_screen_on">चालू</string>
@@ -772,7 +770,6 @@
     <string name="advanced_percent">%1$d%%</string>
     <string name="advanced_percent_whole">%1$.0f%%</string>
     <string name="advanced_percent_tenths">%1$.1f%%</string>
-    <string name="advanced_celsius">%1$d°C</string>
     <string name="advanced_as_of">%1$s तक</string>
     <string name="advanced_memory">मेमोरी</string>
     <string name="advanced_storage">स्टोरेज</string>
@@ -836,10 +833,8 @@
     <string name="device_gb_used">%1$s इस्तेमाल हुआ</string>
     <string name="device_cpu">CPU</string>
     <string name="device_ram">RAM</string>
-    <string name="device_temp">तापमान</string>
     <string name="device_network">नेटवर्क</string>
     <string name="device_percent">%1$d%%</string>
-    <string name="device_celsius">%1$d°C</string>
     <string name="device_disable_title">%1$s बंद करें?</string>
     <string name="device_cancel">रद्द करें</string>
     <plurals name="device_restore_title">
